@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gba-bg: #E8D0A0;
+  --color-gba-border: #306850;
+  --color-gba-highlight: #F8D878;
+  --color-gba-accent: #78C0D8;
+  --color-gba-text: #483018;
+  --color-gba-ui: #F8F0D8;
+  --color-gba-card: #D8C8A8;
+
+  --font-retro: "VT323", monospace;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-gba-bg);
+  color: var(--color-gba-text);
+  min-height: 100vh;
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Smooth fade-in animation for screens */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Smooth modal open/close */
+.modal-enter {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* Button press animation */
+@keyframes buttonPress {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+.button-press:active {
+  animation: buttonPress 0.15s ease-in-out;
+}
