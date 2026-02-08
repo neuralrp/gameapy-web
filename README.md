@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
@@ -71,3 +72,7 @@ export default defineConfig([
   },
 ])
 ```
+=======
+# gameapy-web
+Frontend for Gameapy app
+>>>>>>> 8d7c5f91683430e6867331e08cc9de568bce9322
