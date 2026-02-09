@@ -4,12 +4,34 @@ export interface APIResponse<T = any> {
   data?: T;
 }
 
+export interface PresentingIssue {
+  issue: string;
+  severity: string;
+  duration: string;
+}
+
+export interface LifeEvent {
+  title: string;
+  date: string;
+  impact: string;
+  resolved: boolean;
+  tags: string[];
+}
+
+export interface ClientPreferences {
+  communication_style?: string;
+  pace?: string;
+  focus_areas?: string[];
+}
+
 export interface ClientProfileCreate {
   name: string;
-  entity_id?: string;
-  personality?: string;
-  goals?: string[];
-  presenting_issues?: Array<{issue: string, severity: string}>;
+  personality: string;
+  traits: string[];
+  presenting_issues: PresentingIssue[];
+  goals: string[];
+  life_events: LifeEvent[];
+  preferences?: ClientPreferences;
 }
 
 export interface ClientProfileResponse {
