@@ -41,8 +41,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const response = await apiService.createClient({
         name: 'Gameapy User',
         personality: 'New user',
+        traits: [],
         goals: [],
         presenting_issues: [],
+        life_events: [],
       }) as APIResponse<{ client_id: number }>;
 
       if (response.success && response.data?.client_id) {
