@@ -11,7 +11,7 @@ import type { Card } from '../types/card';
 import type { Counselor } from '../types/counselor';
 
 function transformCounselorFromDB(dbCounselor: CounselorFromDB): Counselor {
-  const data = dbCounselor.profile_json.data;
+  const data = dbCounselor.profile.data;
   
   return {
     id: dbCounselor.id,

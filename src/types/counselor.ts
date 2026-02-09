@@ -32,7 +32,7 @@ export type CounselorFromDB = {
   specialization: string;  // now stores 'who_you_are'
   therapeutic_style: string;  // now stores 'your_vibe'
   credentials: string;  // now stores 'your_worldview'
-  profile_json: {
+  profile: {
     spec: string;
     spec_version: string;
     data: {
