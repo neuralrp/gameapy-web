@@ -52,8 +52,11 @@ export class ApiService {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const timestamp = new Date().toISOString();
+
     try {
-      const url = `${this.baseUrl}${endpoint}`;
+      console.log(`[${timestamp}] API Request: ${options.method || 'GET'} ${url}`);
 
       const response = await fetch(url, {
         headers: {
@@ -67,14 +70,32 @@ export class ApiService {
         const error = await response.json().catch(() => ({
           message: `HTTP ${response.status}: ${response.statusText}`,
         }));
+
+        console.error(`[${timestamp}] API Error:`, {
+          url,
+          status: response.status,
+          statusText: response.statusText,
+          error,
+        });
+
         throw new Error(error.message || `HTTP ${response.status}`);
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log(`[${timestamp}] API Success:`, { url, status: response.status });
+      return data;
     } catch (error) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error(`[${timestamp}] Network Error:`, { url, error: error.message });
         throw new Error("Couldn't reach the server. Is it running?");
       }
+
+      console.error(`[${timestamp}] Request Failed:`, {
+        url,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
       throw error;
     }
   }

@@ -4,7 +4,7 @@ export const API_ENDPOINTS = {
   clients: '/api/v1/clients',
   counselors: '/api/v1/counselors',
   sessions: '/api/v1/sessions',
-  chat: '/api/v1/chat',
+  chat: '/api/v1/chat/chat',
   cards: '/api/v1/cards',
   generateCard: '/api/v1/cards/generate-from-text',
   saveCard: '/api/v1/cards/save',
