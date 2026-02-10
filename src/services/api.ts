@@ -5,6 +5,10 @@ import type {
   ClientProfileCreate,
   SessionCreate,
   APIResponse,
+  GuideStartResponse,
+  GuideInputResponse,
+  GuideConfirmCardResponse,
+  SessionAnalyzeResponse,
 } from '../types/api';
 import type { CounselorFromDB } from '../types/counselor';
 import type { Card } from '../types/card';
@@ -152,6 +156,30 @@ export class ApiService {
   async unpinCard(type: string, id: number): Promise<any> {
     return this.request(API_ENDPOINTS.unpinCard(type, id), {
       method: 'PUT',
+    });
+  }
+
+  async startGuideConversation(clientId: number): Promise<APIResponse<GuideStartResponse>> {
+    return this.request(`${API_ENDPOINTS.guide.start}?client_id=${clientId}`, {
+      method: 'POST',
+    });
+  }
+
+  async sendGuideInput(sessionId: number, userInput: string): Promise<APIResponse<GuideInputResponse>> {
+    return this.request(`${API_ENDPOINTS.guide.input}?session_id=${sessionId}&user_input=${encodeURIComponent(userInput)}`, {
+      method: 'POST',
+    });
+  }
+
+  async confirmGuideCard(sessionId: number, cardType: string, topic: string): Promise<APIResponse<GuideConfirmCardResponse>> {
+    return this.request(`${API_ENDPOINTS.guide.confirmCard}?session_id=${sessionId}&card_type=${cardType}&topic=${encodeURIComponent(topic)}`, {
+      method: 'POST',
+    });
+  }
+
+  async analyzeSession(sessionId: number): Promise<APIResponse<SessionAnalyzeResponse>> {
+    return this.request(API_ENDPOINTS.analyzeSession(sessionId), {
+      method: 'POST',
     });
   }
 }

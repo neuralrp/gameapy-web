@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings } from 'lucide-react';
-import { CounselorCard } from '../components/counselor/CounselorCard';
+import { Layers } from 'lucide-react';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
 import type { Counselor } from '../types/counselor';
@@ -40,68 +39,64 @@ export function CounselorSelection() {
     setShowInventory(true);
   };
 
+  const getCounselorColor = (counselor: Counselor) => {
+    return counselor.visuals.selectionCard.backgroundColor;
+  };
+
   return (
-    <div className="min-h-screen flex flex-col fade-in">
-      {/* Header */}
-      <header className="flex justify-between items-center p-4 border-b-2 border-gba-border bg-gba-ui flex-shrink-0">
-        <h1 className="font-retro text-2xl text-gba-text">Gameapy</h1>
+    <div className="h-screen fade-in relative">
+      {/* Loading State */}
+      {isLoading && (
+        <div className="h-full flex items-center justify-center">
+          <LoadingSpinner message="Loading counselors..." />
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="h-full flex items-center justify-center p-4">
+          <ErrorMessage
+            message={error}
+            onRetry={() => {
+              setError(null);
+              setIsLoading(true);
+              apiService.getCounselors()
+                .then(setCounselors)
+                .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load counselors'))
+                .finally(() => setIsLoading(false));
+            }}
+          />
+        </div>
+      )}
+
+      {/* Counselor Color Grid */}
+      {!isLoading && !error && (
+        <div className="grid grid-cols-2 h-screen">
+          {counselors.map((counselor) => (
+            <button
+              key={counselor.id}
+              onClick={() => handleSelect(counselor)}
+              className={`
+                color-block transition-all duration-200
+                ${selectedCounselor?.id === counselor.id ? 'selected' : ''}
+              `}
+              style={{ backgroundColor: getCounselorColor(counselor) }}
+              aria-label={`Select ${counselor.name}`}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Stacked Cards Button - Top Right */}
+      {!isLoading && !error && (
         <button
           onClick={handleSettings}
-          className="p-2 border-2 border-gba-border rounded hover:bg-gba-highlight transition-colors min-h-[44px] min-w-[44px]"
-          aria-label="Settings"
+          className="icon-button absolute top-4 right-4 min-h-[44px] min-w-[44px] p-2 bg-gba-ui border-2 border-gba-border rounded-lg"
+          aria-label="View cards"
         >
-          <Settings className="w-6 h-6 text-gba-text" />
+          <Layers className="w-6 h-6 text-gba-text" />
         </button>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col items-center justify-center p-4 overflow-y-auto">
-        <div className="w-full max-w-4xl">
-          <h2 className="font-retro text-3xl text-center text-gba-text mb-8">
-            Welcome to Gameapy
-          </h2>
-
-          {/* Loading State */}
-          {isLoading && (
-            <LoadingSpinner message="Loading counselors..." />
-          )}
-
-          {/* Error State */}
-          {error && (
-            <ErrorMessage
-              message={error}
-              onRetry={() => {
-                setError(null);
-                setIsLoading(true);
-                apiService.getCounselors()
-                  .then(setCounselors)
-                  .catch((err) => setError(err instanceof Error ? err.message : 'Failed to load counselors'))
-                  .finally(() => setIsLoading(false));
-              }}
-            />
-          )}
-
-          {/* Counselor Grid */}
-          {!isLoading && !error && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {counselors.map((counselor) => (
-                <CounselorCard
-                  key={counselor.id}
-                  counselor={counselor}
-                  isSelected={selectedCounselor?.id === counselor.id}
-                  onSelect={handleSelect}
-                />
-              ))}
-            </div>
-          )}
-
-          {!isLoading && !error && counselors.length > 0 && (
-            <p className="font-sans text-center text-sm text-gba-text mt-8 opacity-75">
-              Select a counselor to begin your journey
-            </p>
-          )}
-        </div>
-      </main>
+      )}
     </div>
   );
 }

@@ -77,3 +77,44 @@ export interface ChatResponse {
     cards_loaded: number;
   };
 }
+
+export interface GuideStartRequest {
+  client_id: number;
+}
+
+export interface GuideStartResponse {
+  guide_message: string;
+  session_id: number;
+  client_id: number;
+}
+
+export interface GuideInputRequest {
+  session_id: number;
+  user_input: string;
+}
+
+export interface GuideInputResponse {
+  guide_message: string;
+  suggested_card?: {
+    card_type: 'self' | 'character' | 'world';
+    topic: string;
+    confidence: number;
+  };
+  conversation_complete: boolean;
+}
+
+export interface GuideConfirmCardRequest {
+  session_id: number;
+  card_type: string;
+  topic: string;
+}
+
+export interface GuideConfirmCardResponse {
+  card_id: number;
+  card_data: any;
+  guide_message: string;
+}
+
+export interface SessionAnalyzeResponse {
+  cards_updated: number;
+}

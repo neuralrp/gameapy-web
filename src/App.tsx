@@ -1,15 +1,30 @@
 import { AppProvider, useApp } from './contexts/AppContext';
 import { CounselorSelection } from './screens/CounselorSelection';
 import { ChatScreen } from './screens/ChatScreen';
+import { GuideScreen } from './screens/GuideScreen';
 import { CardInventoryModal } from './screens/CardInventoryModal';
+import { Toast } from './components/shared/Toast';
 
 function AppContent() {
-  const { counselor, showInventory, setShowInventory } = useApp();
+  const { counselor, showInventory, setShowInventory, showGuide, toast } = useApp();
 
   return (
     <>
-      {counselor ? <ChatScreen /> : <CounselorSelection />}
+      {showGuide ? (
+        <GuideScreen />
+      ) : counselor ? (
+        <ChatScreen />
+      ) : (
+        <CounselorSelection />
+      )}
       {showInventory && <CardInventoryModal onClose={() => setShowInventory(false)} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          show={true}
+        />
+      )}
     </>
   );
 }

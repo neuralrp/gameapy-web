@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
-import { Settings, ArrowLeft } from 'lucide-react';
-import { Button } from '../components/ui/button';
+import { ArrowLeft, ArrowUp } from 'lucide-react';
+import { CounselorInfoModal } from '../components/counselor/CounselorInfoModal';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
 import type { Message } from '../types/message';
 
 export function ChatScreen() {
-  const { counselor, setCounselor, setShowInventory, clientLoading, sessionId } = useApp();
+  const { counselor, setCounselor, clientLoading, sessionId, sessionMessageCount, incrementSessionMessageCount, resetSessionMessageCount, showToast } = useApp();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [showCounselorInfo, setShowCounselorInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -22,12 +22,32 @@ export function ChatScreen() {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    return () => {
+      if (sessionId && sessionMessageCount > 0) {
+        apiService.analyzeSession(sessionId).catch(err => {
+          console.error('Background session analysis failed:', err);
+        });
+      }
+    };
+  }, [sessionId, sessionMessageCount]);
+
   const handleBack = () => {
+    resetSessionMessageCount();
     setCounselor(null);
   };
 
-  const handleSettings = () => {
-    setShowInventory(true);
+  const triggerCardAnalysis = async () => {
+    if (!sessionId) return;
+
+    try {
+      const response = await apiService.analyzeSession(sessionId);
+      if (response.success && response.data) {
+        showToast({ message: `✅ ${response.data.cards_updated} cards updated`, type: 'success' });
+      }
+    } catch (err) {
+      console.error('Card analysis failed:', err);
+    }
   };
 
   const handleSend = async () => {
@@ -42,7 +62,6 @@ export function ChatScreen() {
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setError(null);
     setIsLoading(true);
 
     try {
@@ -63,39 +82,14 @@ export function ChatScreen() {
       };
 
       setMessages(prev => [...prev, aiMessage]);
+
+      incrementSessionMessageCount();
+
+      if (sessionMessageCount > 0 && (sessionMessageCount + 1) % 5 === 0) {
+        triggerCardAnalysis();
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send message');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRetry = async (messageContent: string) => {
-    if (!sessionId) return;
-
-    setError(null);
-    setIsLoading(true);
-
-    try {
-      const response = await apiService.sendMessage({
-        session_id: sessionId,
-        message_data: {
-          role: 'user',
-          content: messageContent,
-        },
-      });
-
-      const aiMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: response.data.ai_response,
-        timestamp: new Date().toISOString(),
-        cards_loaded: response.data.cards_loaded,
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send message');
+      showToast({ message: err instanceof Error ? err.message : 'Failed to send message', type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -110,32 +104,29 @@ export function ChatScreen() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col fade-in">
-      {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b-2 border-gba-border bg-gba-ui flex-shrink-0">
-        <Button
-          onClick={handleBack}
-          variant="secondary"
-          size="sm"
-          className="flex items-center gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </Button>
-        <h1 className="font-retro text-xl text-gba-text flex-1 text-center px-2">
-          {counselor?.name}
-        </h1>
+    <div className="h-screen flex flex-col fade-in">
+      {/* Header - Taller */}
+      <header className="flex items-center justify-between px-4 py-5 border-b-2 border-gba-border bg-gba-ui flex-shrink-0">
         <button
-          onClick={handleSettings}
-          className="p-2 border-2 border-gba-border rounded hover:bg-gba-highlight transition-colors min-h-[44px] min-w-[44px]"
-          aria-label="Settings"
+          onClick={handleBack}
+          className="flex items-center gap-2 text-gba-text hover:underline min-h-[44px] min-w-[44px]"
+          aria-label="Back"
         >
-          <Settings className="w-6 h-6 text-gba-text" />
+          <ArrowLeft className="w-5 h-5" />
         </button>
+        <button
+          onClick={() => counselor && setShowCounselorInfo(true)}
+          className="flex-1 text-center"
+        >
+          <h1 className="font-retro text-2xl text-gba-text underline cursor-pointer">
+            {counselor?.name}
+          </h1>
+        </button>
+        <div className="w-[44px]" />
       </header>
 
       {/* Chat Area */}
-      <main className="flex-1 flex flex-col p-4 overflow-y-auto">
+      <main className="flex-1 flex flex-col p-4 overflow-y-auto bg-gba-bg">
         {messages.length === 0 && (
           <div className="flex-1 flex items-center justify-center text-center">
             <p className="font-sans text-gba-text opacity-75">
@@ -144,84 +135,72 @@ export function ChatScreen() {
           </div>
         )}
 
-          <div className="space-y-4 flex-1 overflow-y-auto">
-           {messages.map((message) => (
-             <div
-               key={message.id}
-               className={`flex ${
-                 message.role === 'user' ? 'justify-end' : 'justify-start'
-               }`}
-             >
-               <div
-                 className={`max-w-[85%] sm:max-w-[80%] p-3 border-2 rounded-lg break-words ${
-                   message.role === 'user'
-                     ? 'bg-gba-highlight text-gba-border'
-                     : ''
-                 }`}
-                 style={
-                   message.role === 'assistant' && counselor?.visuals
-                     ? {
-                         backgroundColor: counselor.visuals.chatBubble.backgroundColor,
-                         borderColor: counselor.visuals.chatBubble.borderColor,
-                         borderWidth: counselor.visuals.chatBubble.borderWidth,
-                         borderStyle: counselor.visuals.chatBubble.borderStyle,
-                         borderRadius: counselor.visuals.chatBubble.borderRadius,
-                         color: counselor.visuals.chatBubble.textColor,
-                       }
-                     : {}
-                 }
-               >
-                 <p className="font-sans text-base sm:text-sm whitespace-pre-wrap">
-                   {message.content}
-                 </p>
-                 {message.cards_loaded !== undefined && message.cards_loaded > 0 && (
-                   <div className="mt-2 pt-2 border-t border-gba-border flex items-center gap-1">
-                     <span className="text-xs">📎 {message.cards_loaded} cards loaded</span>
-                   </div>
-                 )}
-               </div>
-             </div>
-           ))}
-           <div ref={messagesEndRef} />
-         </div>
+        <div className="space-y-3 flex-1 overflow-y-auto">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex ${
+                message.role === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              <div
+                className={`message-bubble ${
+                  message.role === 'user' ? 'user' : 'assistant'
+                }`}
+                style={
+                  message.role === 'assistant' && counselor?.visuals
+                    ? {
+                        backgroundColor: counselor.visuals.chatBubble.backgroundColor,
+                        color: counselor.visuals.chatBubble.textColor,
+                      }
+                    : {}
+                }
+              >
+                <p className="font-sans text-base whitespace-pre-wrap">
+                  {message.content}
+                </p>
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
       </main>
 
       {/* Input Area */}
       <footer className="p-4 border-t-2 border-gba-border bg-gba-ui flex-shrink-0">
-        {error && (
-          <div className="mb-2 p-3 bg-red-100 border-2 border-red-500 text-red-700 rounded font-sans text-sm">
-            <p className="mb-2">{error}</p>
-            {messages.length > 0 && (
-              <Button onClick={() => handleRetry(messages[messages.length - 1].content)} size="sm">
-                Retry
-              </Button>
-            )}
-          </div>
-        )}
-        <div className="flex gap-2">
+        <div className="flex gap-3 items-end">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Type your message..."
-            className="flex-1 px-4 py-2 border-2 border-gba-border rounded-lg font-sans text-gba-text bg-white min-h-[44px]"
+            className="input-bubble flex-1 px-4 py-3 font-sans text-gba-text bg-white min-h-[44px]"
             disabled={isLoading || !sessionId}
           />
-          <Button
+          <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading || !sessionId}
-            size="md"
+            className="send-button min-h-[44px] min-w-[44px]"
+            aria-label="Send message"
           >
-            {isLoading ? '...' : 'Send'}
-          </Button>
+            <ArrowUp className="w-5 h-5 text-white" />
+          </button>
         </div>
         {!sessionId && (
-          <p className="mt-2 text-xs font-sans text-gba-text opacity-50">
+          <p className="mt-2 text-xs font-sans text-gba-text opacity-50 text-center">
             Connecting to session...
           </p>
         )}
       </footer>
+
+      {/* Counselor Info Modal */}
+      {showCounselorInfo && counselor && (
+        <CounselorInfoModal
+          counselor={counselor}
+          onClose={() => setShowCounselorInfo(false)}
+        />
+      )}
     </div>
   );
 }

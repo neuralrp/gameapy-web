@@ -65,3 +65,139 @@ body {
 .button-press:active {
   animation: buttonPress 0.15s ease-in-out;
 }
+
+/* Color block styles */
+.color-block {
+  width: 100%;
+  height: 100%;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.color-block:hover {
+  filter: brightness(1.1);
+}
+
+.color-block:active {
+  filter: brightness(0.9);
+  transform: scale(0.98);
+}
+
+.color-block.selected {
+  border: 3px solid #483018;
+  transform: scale(0.98);
+  box-shadow: inset 0 0 20px rgba(72, 48, 24, 0.2);
+}
+
+/* Icon button styles */
+.icon-button {
+  box-shadow: 0 4px 12px rgba(72, 48, 24, 0.3);
+  transition: all 0.2s ease-in-out;
+}
+
+.icon-button:hover {
+  box-shadow: 0 6px 16px rgba(72, 48, 24, 0.4);
+  transform: translateY(-2px);
+}
+
+.icon-button:active {
+  box-shadow: 0 2px 8px rgba(72, 48, 24, 0.3);
+  transform: translateY(0);
+}
+
+/* Message bubble styles (iMessage-like) */
+.message-bubble {
+  border-radius: 18px;
+  padding: 8px 12px;
+  max-width: 80%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.message-bubble.user {
+  background-color: #F8D878;
+  border: none;
+}
+
+.message-bubble.assistant {
+  background-color: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Input bubble style (rounded rectangle) */
+.input-bubble {
+  border-radius: 20px;
+  border: 2px solid #306850;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input-bubble:focus {
+  border-color: #4898A8;
+}
+
+/* Send button style */
+.send-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #306850;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.send-button:hover:not(:disabled) {
+  background-color: #408060;
+  transform: scale(1.05);
+}
+
+.send-button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.send-button:disabled {
+  background-color: #B8B8A0;
+  cursor: not-allowed;
+}
+
+/* Toast notification */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transition: all 0.3s ease-out;
+  z-index: 100;
+  min-width: 200px;
+  text-align: center;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.toast.success {
+  background-color: #88C070;
+  color: #483018;
+}
+
+.toast.error {
+  background-color: #F87070;
+  color: #483018;
+}
+
+.toast.info {
+  background-color: #78C0D8;
+  color: #483018;
+}
