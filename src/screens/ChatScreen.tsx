@@ -85,6 +85,18 @@ export function ChatScreen() {
 
       incrementSessionMessageCount();
 
+      if (response.data.counselor_switched && response.data.new_counselor) {
+        const newCounselor: Counselor = {
+          id: counselor?.id || 0,
+          name: response.data.new_counselor.name,
+          description: response.data.new_counselor.who_you_are,
+          specialty: response.data.new_counselor.your_vibe,
+          visuals: response.data.new_counselor.visuals,
+        };
+        setCounselor(newCounselor);
+        showToast({ message: `✨ ${response.data.new_counselor.name} has joined the conversation!`, type: 'success' });
+      }
+
       if (sessionMessageCount > 0 && (sessionMessageCount + 1) % 5 === 0) {
         triggerCardAnalysis();
       }
@@ -103,13 +115,20 @@ export function ChatScreen() {
     );
   }
 
+  const counselorColor = counselor?.visuals.selectionCard.backgroundColor || '#E8D0A0';
+  const counselorTextColor = counselor?.visuals.textColor || '#483018';
+
   return (
-    <div className="h-screen flex flex-col fade-in">
+    <div className="h-screen flex flex-col fade-in" style={{ backgroundColor: counselorColor }}>
       {/* Header - Taller */}
-      <header className="flex items-center justify-between px-4 py-5 border-b-2 border-gba-border bg-gba-ui flex-shrink-0">
+      <header 
+        className="flex items-center justify-between px-4 py-5 border-b-2 border-gba-border flex-shrink-0"
+        style={{ backgroundColor: counselorColor, color: counselorTextColor }}
+      >
         <button
           onClick={handleBack}
-          className="flex items-center gap-2 text-gba-text hover:underline min-h-[44px] min-w-[44px]"
+          className="flex items-center gap-2 hover:underline min-h-[44px] min-w-[44px]"
+          style={{ color: counselorTextColor }}
           aria-label="Back"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -118,7 +137,10 @@ export function ChatScreen() {
           onClick={() => counselor && setShowCounselorInfo(true)}
           className="flex-1 text-center"
         >
-          <h1 className="font-retro text-2xl text-gba-text underline cursor-pointer">
+          <h1 
+            className="font-retro text-2xl underline cursor-pointer"
+            style={{ color: counselorTextColor }}
+          >
             {counselor?.name}
           </h1>
         </button>
@@ -126,10 +148,16 @@ export function ChatScreen() {
       </header>
 
       {/* Chat Area */}
-      <main className="flex-1 flex flex-col p-4 overflow-y-auto bg-gba-bg">
+      <main 
+        className="flex-1 flex flex-col p-4 overflow-y-auto"
+        style={{ backgroundColor: counselorColor }}
+      >
         {messages.length === 0 && (
           <div className="flex-1 flex items-center justify-center text-center">
-            <p className="font-sans text-gba-text opacity-75">
+            <p 
+              className="font-sans opacity-75"
+              style={{ color: counselorTextColor }}
+            >
               Start a conversation with {counselor?.name}
             </p>
           </div>
@@ -152,8 +180,11 @@ export function ChatScreen() {
                     ? {
                         backgroundColor: counselor.visuals.chatBubble.backgroundColor,
                         color: counselor.visuals.chatBubble.textColor,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
                       }
-                    : {}
+                    : {
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                    }
                 }
               >
                 <p className="font-sans text-base whitespace-pre-wrap">
@@ -167,7 +198,10 @@ export function ChatScreen() {
       </main>
 
       {/* Input Area */}
-      <footer className="p-4 border-t-2 border-gba-border bg-gba-ui flex-shrink-0">
+      <footer 
+        className="p-4 border-t-2 border-gba-border flex-shrink-0"
+        style={{ backgroundColor: `${counselorColor}99` }}
+      >
         <div className="flex gap-3 items-end">
           <input
             type="text"
@@ -175,20 +209,27 @@ export function ChatScreen() {
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Type your message..."
-            className="input-bubble flex-1 px-4 py-3 font-sans text-gba-text bg-white min-h-[44px]"
+            className="input-bubble flex-1 px-4 py-3 font-sans bg-white min-h-[44px]"
+            style={{ color: counselorTextColor }}
             disabled={isLoading || !sessionId}
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading || !sessionId}
             className="send-button min-h-[44px] min-w-[44px]"
+            style={{ 
+              backgroundColor: counselor?.visuals.borderColor || '#306850'
+            }}
             aria-label="Send message"
           >
             <ArrowUp className="w-5 h-5 text-white" />
           </button>
         </div>
         {!sessionId && (
-          <p className="mt-2 text-xs font-sans text-gba-text opacity-50 text-center">
+          <p 
+            className="mt-2 text-xs font-sans opacity-50 text-center"
+            style={{ color: counselorTextColor }}
+          >
             Connecting to session...
           </p>
         )}

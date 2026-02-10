@@ -75,6 +75,48 @@ export interface ChatResponse {
     ai_message_id?: number;
     ai_response: string;
     cards_loaded: number;
+    counselor_switched?: boolean;
+    new_counselor?: {
+      name: string;
+      who_you_are: string;
+      your_vibe: string;
+      your_worldview: string;
+      session_template: string;
+      session_examples: Array<{
+        user_situation: string;
+        your_response: string;
+        approach: string;
+      }>;
+      tags: string[];
+      visuals: {
+        primaryColor: string;
+        secondaryColor: string;
+        borderColor: string;
+        textColor: string;
+        chatBubble: {
+          backgroundColor: string;
+          borderColor: string;
+          borderWidth: string;
+          borderStyle: string;
+          borderRadius: string;
+          textColor: string;
+        };
+        selectionCard: {
+          backgroundColor: string;
+          hoverBackgroundColor: string;
+          borderColor: string;
+          textColor: string;
+        };
+        icon?: string;
+      };
+      crisis_protocol: string;
+      hotlines: Array<{
+        name: string;
+        contact: string;
+        available?: string;
+        info?: string;
+      }>;
+    };
   };
 }
 
