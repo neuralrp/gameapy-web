@@ -71,7 +71,7 @@ export function CounselorSelection() {
 
       {/* Counselor Color Grid */}
       {!isLoading && !error && (
-        <div className="grid grid-cols-2 h-screen">
+        <div className="grid grid-cols-2 grid-rows-2 h-screen">
           {counselors.map((counselor) => (
             <button
               key={counselor.id}
