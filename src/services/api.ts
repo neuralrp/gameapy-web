@@ -9,6 +9,9 @@ import type {
   GuideInputResponse,
   GuideConfirmCardResponse,
   SessionAnalyzeResponse,
+  CardGenerateRequest,
+  CardGenerateResponse,
+  CardSaveRequest,
 } from '../types/api';
 import type { CounselorFromDB } from '../types/counselor';
 import type { Card } from '../types/card';
@@ -180,6 +183,38 @@ export class ApiService {
   async analyzeSession(sessionId: number): Promise<APIResponse<SessionAnalyzeResponse>> {
     return this.request(API_ENDPOINTS.analyzeSession(sessionId), {
       method: 'POST',
+    });
+  }
+
+  async generateCardFromText(
+    cardType: 'self' | 'character' | 'world',
+    plainText: string,
+    name?: string
+  ): Promise<APIResponse<CardGenerateResponse>> {
+    const payload: CardGenerateRequest = {
+      card_type: cardType,
+      plain_text: plainText,
+      name,
+    };
+    return this.request(API_ENDPOINTS.generateCard, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  async saveCard(
+    clientId: number,
+    cardType: 'self' | 'character' | 'world',
+    cardData: Record<string, any>
+  ): Promise<APIResponse<{ card_id: number }>> {
+    const payload: CardSaveRequest = {
+      client_id: clientId,
+      card_type: cardType,
+      card_data: cardData,
+    };
+    return this.request(API_ENDPOINTS.saveCard, {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
   }
 }

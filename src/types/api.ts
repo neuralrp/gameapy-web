@@ -118,3 +118,23 @@ export interface GuideConfirmCardResponse {
 export interface SessionAnalyzeResponse {
   cards_updated: number;
 }
+
+export interface CardGenerateRequest {
+  card_type: 'self' | 'character' | 'world';
+  plain_text: string;
+  context?: string;
+  name?: string;
+}
+
+export interface CardGenerateResponse {
+  card_type: 'self' | 'character' | 'world';
+  generated_card: Record<string, any>;
+  preview: boolean;
+  fallback: boolean;
+}
+
+export interface CardSaveRequest {
+  client_id: number;
+  card_type: 'self' | 'character' | 'world';
+  card_data: Record<string, any>;
+}
