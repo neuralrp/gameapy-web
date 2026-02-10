@@ -17,6 +17,8 @@ interface AppContextType {
   setCounselor: (counselor: Counselor | null) => void;
   showInventory: boolean;
   setShowInventory: (show: boolean) => void;
+  showInventoryFullScreen: boolean;
+  setShowInventoryFullScreen: (show: boolean) => void;
   initializeClient: () => Promise<void>;
   showGuide: boolean;
   setShowGuide: (show: boolean) => void;
@@ -40,6 +42,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [counselor, setCounselor] = useState<Counselor | null>(null);
   const [showInventory, setShowInventory] = useState(false);
+  const [showInventoryFullScreen, setShowInventoryFullScreen] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [guideSessionId, setGuideSessionId] = useState<number | null>(null);
   const [sessionMessageCount, setSessionMessageCount] = useState(0);
@@ -160,6 +163,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setCounselor: handleSetCounselor,
         showInventory,
         setShowInventory,
+        showInventoryFullScreen,
+        setShowInventoryFullScreen,
         initializeClient,
         showGuide,
         setShowGuide,

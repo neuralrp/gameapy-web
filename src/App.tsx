@@ -6,11 +6,16 @@ import { CardInventoryModal } from './screens/CardInventoryModal';
 import { Toast } from './components/shared/Toast';
 
 function AppContent() {
-  const { counselor, showInventory, setShowInventory, showGuide, toast } = useApp();
+  const { counselor, showInventory, setShowInventory, showInventoryFullScreen, setShowInventoryFullScreen, showGuide, toast } = useApp();
 
   return (
     <>
-      {showGuide ? (
+      {showInventoryFullScreen ? (
+        <CardInventoryModal
+          isFullScreen={true}
+          onClose={() => setShowInventoryFullScreen(false)}
+        />
+      ) : showGuide ? (
         <GuideScreen />
       ) : counselor ? (
         <ChatScreen />

@@ -48,7 +48,7 @@ function getCardFields(card: Card): Array<{ label: string; value: string; key: s
   return fields;
 }
 
-export function CardInventoryModal({ onClose }: { onClose: () => void }) {
+export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose: () => void; isFullScreen?: boolean }) {
   const { clientId } = useApp();
   const [activeTab, setActiveTab] = useState<TabType>('self');
   const [cards, setCards] = useState<Card[]>([]);
@@ -281,8 +281,8 @@ export function CardInventoryModal({ onClose }: { onClose: () => void }) {
   ];
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 modal-enter">
-      <div className="bg-gba-ui border-2 border-gba-border rounded-lg max-w-2xl w-full max-h-[85vh] flex flex-col">
+    <div className={isFullScreen ? 'min-h-screen flex flex-col bg-gba-bg fade-in' : 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 modal-enter'}>
+      <div className={isFullScreen ? 'bg-gba-ui border-2 border-gba-border flex-1 flex flex-col h-full' : 'bg-gba-ui border-2 border-gba-border rounded-lg max-w-2xl w-full max-h-[85vh] flex flex-col'}>
         <div className="flex justify-between items-center p-4 border-b-2 border-gba-border flex-shrink-0">
           <h2 className="font-retro text-2xl text-gba-text px-2">
             {selectedCard
@@ -295,7 +295,7 @@ export function CardInventoryModal({ onClose }: { onClose: () => void }) {
             onClick={selectedCard ? handleCancel : onClose}
             className="p-2 border-2 border-gba-border rounded hover:bg-gba-highlight font-sans text-sm min-h-[44px] min-w-[44px]"
           >
-            {selectedCard ? '←' : '✕'}
+            {selectedCard ? '←' : isFullScreen ? '←' : '✕'}
           </button>
         </div>
 

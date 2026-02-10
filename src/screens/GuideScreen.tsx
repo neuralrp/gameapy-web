@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Layers } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
@@ -17,7 +17,7 @@ interface GuideMessage {
 }
 
 export function GuideScreen() {
-  const { endGuide, guideSessionId } = useApp();
+  const { endGuide, guideSessionId, setShowInventoryFullScreen } = useApp();
   const [messages, setMessages] = useState<GuideMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -148,7 +148,13 @@ export function GuideScreen() {
         <h1 className="font-retro text-xl text-gba-text flex-1 text-center px-2">
           Create Cards
         </h1>
-        <div className="w-16" />
+        <button
+          onClick={() => setShowInventoryFullScreen(true)}
+          className="icon-button min-h-[44px] min-w-[44px] p-2 bg-gba-ui border-2 border-gba-border rounded-lg"
+          aria-label="View cards"
+        >
+          <Layers className="w-6 h-6 text-gba-text" />
+        </button>
       </header>
 
       <main className="flex-1 flex flex-col p-4 overflow-y-auto">

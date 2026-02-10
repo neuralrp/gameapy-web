@@ -7,7 +7,7 @@ import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
 
 export function CounselorSelection() {
-  const { setCounselor, setShowInventory } = useApp();
+  const { setCounselor, setShowInventory, startGuide } = useApp();
   const [selectedCounselor, setSelectedCounselor] = useState<Counselor | null>(null);
   const [counselors, setCounselors] = useState<Counselor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +36,7 @@ export function CounselorSelection() {
   };
 
   const handleSettings = () => {
-    setShowInventory(true);
+    startGuide();
   };
 
   const getCounselorColor = (counselor: Counselor) => {
