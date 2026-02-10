@@ -5,6 +5,7 @@ import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
 import { useDebounce } from '../hooks/useDebounce';
 import type { Card, CardType } from '../types/card';
+import { ArrowLeft, Search, ChevronRight, Settings, Plus } from 'lucide-react';
 
 type TabType = 'self' | 'character' | 'world';
 
@@ -49,7 +50,7 @@ function getCardFields(card: Card): Array<{ label: string; value: string; key: s
 }
 
 export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose: () => void; isFullScreen?: boolean }) {
-  const { clientId, showToast } = useApp();
+  const { clientId, showToast, counselor } = useApp();
   const [activeTab, setActiveTab] = useState<TabType>('self');
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,13 +66,12 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
 
   const [isCreating, setIsCreating] = useState(false);
   const [createCardType, setCreateCardType] = useState<CardType>('character');
-  const [createPrompt, setCreatePrompt] = useState('');
-  const [generatedCard, setGeneratedCard] = useState<Record<string, any> | null>(null);
-  const [generating, setGenerating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
   const [createForm, setCreateForm] = useState<Record<string, string>>({});
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  const counselorColor = counselor?.visuals.selectionCard.backgroundColor || '#78C0D8';
 
   useEffect(() => {
     loadCards();
@@ -241,43 +241,8 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     return errors;
   };
 
-  const handleGenerateCard = async () => {
-    if (!createPrompt.trim() || !clientId) return;
-
-    setGenerating(true);
-    setCreateError(null);
-
-    try {
-      const response = await apiService.generateCardFromText(
-        createCardType,
-        createPrompt
-      );
-
-      if (response.success && response.data?.generated_card) {
-        setGeneratedCard(response.data.generated_card);
-        const tempCard = {
-          ...response.data.generated_card,
-          card_type: createCardType,
-          id: 0,
-          auto_update_enabled: true,
-          is_pinned: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          payload: response.data.generated_card,
-        } as Card;
-        setCreateForm(extractEditableFields(tempCard));
-      } else {
-        setCreateError(response.message || 'Failed to generate card');
-      }
-    } catch (err) {
-      setCreateError(err instanceof Error ? err.message : 'Failed to generate card');
-    } finally {
-      setGenerating(false);
-    }
-  };
-
   const handleCreateCard = async () => {
-    if (!generatedCard || !clientId) return;
+    if (!clientId) return;
 
     const errors = validateForm(createCardType, createForm);
     if (errors.length > 0) {
@@ -289,7 +254,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     setCreateError(null);
 
     try {
-      const cardData = { ...generatedCard, ...createForm };
+      const cardData = { ...createForm, auto_update_enabled: true, is_pinned: false };
       const response = await apiService.saveCard(clientId, createCardType, cardData);
 
       if (response.success) {
@@ -300,8 +265,6 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
 
         await loadCards();
         setIsCreating(false);
-        setGeneratedCard(null);
-        setCreatePrompt('');
         setCreateForm({});
         setCreateError(null);
       } else {
@@ -316,18 +279,31 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
 
   const handleCancelCreate = () => {
     setIsCreating(false);
-    setGeneratedCard(null);
-    setCreatePrompt('');
     setCreateForm({});
     setCreateError(null);
+  };
+
+  const getInitialCreateForm = (cardType: CardType): Record<string, string> => {
+    if (cardType === 'world') {
+      return { title: '', description: '', event_type: '' };
+    } else if (cardType === 'character') {
+      return { name: '', relationship_type: '', personality: '' };
+    } else {
+      return { name: '', personality: '', background: '', description: '' };
+    }
+  };
+
+  const handleStartCreate = (cardType: CardType) => {
+    setCreateCardType(cardType);
+    setCreateForm(getInitialCreateForm(cardType));
+    setCreateError(null);
+    setIsCreating(true);
   };
 
   const handleCreateFormChange = (field: string, value: string) => {
     setCreateForm(prev => ({ ...prev, [field]: value }));
     setCreateError(null);
   };
-
-
 
   const filteredCards = cards
     .filter((card) => card.card_type === activeTab)
@@ -368,17 +344,11 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     return `No ${tabName} cards yet. Start chatting to create cards!`;
   };
 
-  const tabs: { id: TabType; label: string }[] = [
-    { id: 'self', label: 'Self' },
-    { id: 'character', label: 'Character' },
-    { id: 'world', label: 'World' },
-  ];
-
   return (
-    <div className={isFullScreen ? 'min-h-screen flex flex-col bg-gba-bg fade-in' : 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 modal-enter'}>
-      <div className={isFullScreen ? 'bg-gba-ui border-2 border-gba-border flex-1 flex flex-col h-full' : 'bg-gba-ui border-2 border-gba-border rounded-lg max-w-2xl w-full max-h-[85vh] flex flex-col'}>
-        <div className="flex justify-between items-center p-4 border-b-2 border-gba-border flex-shrink-0">
-          <h2 className="font-retro text-2xl text-gba-text px-2">
+    <div className={isFullScreen ? 'min-h-screen flex flex-col bg-gray-50 fade-in' : 'fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 modal-enter'}>
+      <div className={isFullScreen ? 'bg-white flex-1 flex flex-col h-full shadow-2xl' : 'bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden'}>
+        <div className="flex justify-between items-center p-5 pb-4 flex-shrink-0 bg-white">
+          <h2 className="font-sans text-xl font-semibold text-gray-900">
             {isCreating
               ? 'Create New Card'
               : selectedCard
@@ -397,41 +367,42 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                 onClose();
               }
             }}
-            className="p-2 border-2 border-gba-border rounded hover:bg-gba-highlight font-sans text-sm min-h-[44px] min-w-[44px]"
+            className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors min-h-[44px] min-w-[44px]"
+            aria-label="Back"
           >
-            ←
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
         {!selectedCard && !isCreating && (
-          <div className="p-4 border-b-2 border-gba-border flex-shrink-0">
-            <div className="flex gap-2 mb-4">
-              {tabs.map((tab) => (
+          <div className="px-5 pb-4 flex-shrink-0 bg-white border-b border-gray-100">
+            <div className="segmented-control mb-4">
+              {(['self', 'character', 'world'] as TabType[]).map((tab) => (
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 border-2 border-gba-border font-sans font-medium transition-colors min-h-[44px] ${
-                    activeTab === tab.id
-                      ? 'bg-gba-highlight text-gba-border'
-                      : 'bg-gba-ui text-gba-text hover:bg-gba-highlight'
-                  }`}
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`segmented-control-item ${activeTab === tab ? 'active' : ''}`}
+                  style={activeTab === tab ? { color: counselorColor } : { color: '#6B7280' }}
                 >
-                  {tab.label}
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
             </div>
 
-            <input
-              type="text"
-              placeholder="Search cards..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text placeholder-gba-text placeholder-opacity-50 focus:outline-none focus:border-gba-accent min-h-[44px]"
-            />
+            <div className="search-wrapper">
+              <Search className="search-icon w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search cards..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="card-input"
+              />
+            </div>
           </div>
         )}
 
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-5 bg-gray-50 relative">
           {loading && !selectedCard && !isCreating ? (
             <div className="flex justify-center items-center py-12">
               <LoadingSpinner size="lg" />
@@ -441,18 +412,17 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
           ) : isCreating ? (
             <CardCreateForm
               cardType={createCardType}
-              setCardType={setCreateCardType}
-              prompt={createPrompt}
-              generatedCard={generatedCard}
+              setCardType={(type) => {
+                setCreateCardType(type);
+                setCreateForm(getInitialCreateForm(type));
+              }}
               form={createForm}
               onChange={handleCreateFormChange}
-              onGenerate={handleGenerateCard}
               onSave={handleCreateCard}
               onCancel={handleCancelCreate}
-              generating={generating}
               saving={saving}
               error={createError}
-              onPromptChange={setCreatePrompt}
+              counselorColor={counselorColor}
             />
           ) : selectedCard ? (
             isEditing ? (
@@ -464,6 +434,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                 onCancel={handleCancel}
                 saving={saving}
                 error={editError}
+                counselorColor={counselorColor}
               />
             ) : (
               <CardDetailView
@@ -472,20 +443,23 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                 onTogglePin={() => handleTogglePin(selectedCard)}
                 onToggleAutoUpdate={() => handleToggleAutoUpdate(selectedCard)}
                 toggling={togglingCardId === selectedCard.id}
+                counselorColor={counselorColor}
               />
             )
           ) : filteredCards.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="font-sans text-gba-text text-lg mb-2">{getEmptyStateMessage()}</p>
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                <Settings className="w-8 h-8 text-gray-400" />
+              </div>
+              <p className="font-sans text-gray-600 text-base mb-6">{getEmptyStateMessage()}</p>
               {!debouncedSearchQuery && (
                 <button
-                  onClick={() => {
-                    setIsCreating(true);
-                    setCreateCardType(activeTab);
-                  }}
-                  className="mt-4 px-4 py-2 border-2 border-gba-border bg-gba-highlight font-sans font-medium hover:bg-gba-accent min-h-[44px]"
+                  onClick={() => handleStartCreate(activeTab)}
+                  className="pill-button pill-button-primary"
+                  style={{ background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)` }}
                 >
-                  Create Cards!
+                  <Plus className="w-5 h-5 mr-2" />
+                  Create {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Card
                 </button>
               )}
             </div>
@@ -494,61 +468,49 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
               {filteredCards.map((card) => (
                 <div
                   key={card.id}
-                  className="bg-gba-bg border-2 border-gba-border p-4 rounded-lg cursor-pointer hover:bg-gba-card"
+                  className="card-item"
                   onClick={() => handleViewCard(card)}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
                         {card.is_pinned && (
-                          <span className="text-xl" title="Pinned">📌</span>
+                          <span className="badge badge-pinned" title="Pinned">
+                            📌 Pinned
+                          </span>
                         )}
-                        <h3 className="font-retro text-xl text-gba-text">
+                        <h3 className="font-sans font-semibold text-base text-gray-900 truncate">
                           {getCardTitle(card)}
                         </h3>
                       </div>
-                      <p className="font-sans text-sm text-gba-text">
+                      <p className="font-sans text-sm text-gray-500 line-clamp-2">
                         {getCardSubtitle(card)}
                       </p>
+                      {card.auto_update_enabled && (
+                        <span className="badge badge-auto mt-2" title="Auto-update enabled">
+                          🤖 Auto-update
+                        </span>
+                      )}
                     </div>
-                  </div>
-
-                  <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      onClick={() => handleEdit(card)}
-                      disabled={togglingCardId === card.id}
-                      className="px-3 py-1 border-2 border-gba-border bg-gba-ui font-sans text-sm text-gba-text hover:bg-gba-highlight disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleToggleAutoUpdate(card)}
-                      disabled={togglingCardId === card.id}
-                      className={`px-3 py-1 border-2 border-gba-border font-sans text-sm hover:bg-gba-highlight disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] ${
-                        card.auto_update_enabled
-                          ? 'bg-gba-accent text-gba-border'
-                          : 'bg-gba-ui text-gba-text'
-                      }`}
-                      title={card.auto_update_enabled ? 'Auto-update enabled' : 'Auto-update disabled'}
-                    >
-                      🤖 {card.auto_update_enabled ? 'ON' : 'OFF'}
-                    </button>
-                    <button
-                      onClick={() => handleTogglePin(card)}
-                      disabled={togglingCardId === card.id}
-                      className={`px-3 py-1 border-2 border-gba-border font-sans text-sm hover:bg-gba-highlight disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] ${
-                        card.is_pinned
-                          ? 'bg-gba-accent text-gba-border'
-                          : 'bg-gba-ui text-gba-text'
-                      }`}
-                      title={card.is_pinned ? 'Unpin card' : 'Pin card'}
-                    >
-                      {card.is_pinned ? '📌 Unpin' : '📌 Pin'}
-                    </button>
+                    <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-3" />
                   </div>
                 </div>
               ))}
             </div>
+          )}
+
+          {!selectedCard && !isCreating && filteredCards.length > 0 && (
+            <button
+              onClick={() => handleStartCreate(activeTab)}
+              className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-10"
+              style={{
+                background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)`,
+                boxShadow: `0 4px 14px rgba(0, 0, 0, 0.15), 0 0 0 4px ${counselorColor}33`
+              }}
+              aria-label="Create new card"
+            >
+              <Plus className="w-7 h-7 text-white" />
+            </button>
           )}
         </div>
       </div>
@@ -562,73 +524,93 @@ function CardDetailView({
   onTogglePin,
   onToggleAutoUpdate,
   toggling,
+  counselorColor,
 }: {
   card: Card;
   onEdit: () => void;
   onTogglePin: () => void;
   onToggleAutoUpdate: () => void;
   toggling: boolean;
+  counselorColor: string;
 }) {
   const fields = getCardFields(card);
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-2 text-sm text-gba-text">
-          {card.is_pinned && <span>📌 Pinned</span>}
-          {card.auto_update_enabled && <span>🤖 Auto-update: ON</span>}
+    <div className="space-y-4">
+      <div className="card-detail-section">
+        <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">📇</span>
+            <span className="text-sm text-gray-500">Last updated</span>
+          </div>
+          <span className="text-sm text-gray-900 font-medium">
+            {formatTimestamp(card.updated_at)}
+          </span>
         </div>
-        <span className="text-sm text-gba-text">
-          Updated: {formatTimestamp(card.updated_at)}
-        </span>
-      </div>
 
-      <div className="space-y-4">
         {fields.map((field) => (
-          <div key={field.key} className="space-y-1">
-            <label className="text-sm font-semibold text-gba-text">{field.label}</label>
-            <p className="font-sans text-base text-gba-text whitespace-pre-wrap">
-              {field.value || <span className="italic text-gba-text opacity-50">Not set</span>}
+          <div key={field.key} className="card-detail-field">
+            <div className="card-detail-label">{field.label}</div>
+            <p className="card-detail-value whitespace-pre-wrap">
+              {field.value || <span className="empty">Not set</span>}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="pt-4 border-t-2 border-gba-border">
-        <p className="text-sm text-gba-text mb-2">Created: {formatTimestamp(card.created_at)}</p>
+      <div className="card-detail-section">
+        <div className="flex items-center justify-between py-2">
+          <div className="flex items-center gap-3">
+            <span className="text-xl">📌</span>
+            <div>
+              <div className="font-medium text-gray-900">Pin this card</div>
+              <div className="text-sm text-gray-500">Always load in conversation context</div>
+            </div>
+          </div>
+          <input
+            type="checkbox"
+            className="toggle-switch"
+            checked={card.is_pinned}
+            onChange={onTogglePin}
+            disabled={toggling}
+          />
+        </div>
       </div>
 
-      <div className="flex gap-2 mt-4">
+      <div className="card-detail-section">
+        <div className="flex items-center justify-between py-2">
+          <div className="flex items-center gap-3">
+            <span className="text-xl">🤖</span>
+            <div>
+              <div className="font-medium text-gray-900">Auto-update</div>
+              <div className="text-sm text-gray-500">Let AI update this card</div>
+            </div>
+          </div>
+          <input
+            type="checkbox"
+            className="toggle-switch"
+            checked={card.auto_update_enabled}
+            onChange={onToggleAutoUpdate}
+            disabled={toggling}
+          />
+        </div>
+      </div>
+
+      <div className="pt-2">
         <button
           onClick={onEdit}
           disabled={toggling}
-          className="px-4 py-2 border-2 border-gba-border bg-gba-highlight font-sans font-medium hover:bg-gba-accent disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+          className="pill-button pill-button-primary w-full"
+          style={{ background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)` }}
         >
+          <Settings className="w-5 h-5 mr-2" />
           Edit Card
         </button>
-        <button
-          onClick={onToggleAutoUpdate}
-          disabled={toggling}
-          className={`px-4 py-2 border-2 border-gba-border font-sans font-medium hover:bg-gba-highlight disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] ${
-            card.auto_update_enabled
-              ? 'bg-gba-accent text-gba-border'
-              : 'bg-gba-ui text-gba-text'
-          }`}
-        >
-          🤖 {card.auto_update_enabled ? 'Auto-update: ON' : 'Auto-update: OFF'}
-        </button>
-        <button
-          onClick={onTogglePin}
-          disabled={toggling}
-          className={`px-4 py-2 border-2 border-gba-border font-sans font-medium hover:bg-gba-highlight disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] ${
-            card.is_pinned
-              ? 'bg-gba-accent text-gba-border'
-              : 'bg-gba-ui text-gba-text'
-          }`}
-        >
-          {card.is_pinned ? '📌 Unpin' : '📌 Pin'}
-        </button>
       </div>
+
+      <p className="text-center text-xs text-gray-400 mt-4">
+        Created {formatTimestamp(card.created_at)}
+      </p>
     </div>
   );
 }
@@ -641,6 +623,7 @@ function CardEditForm({
   onCancel,
   saving,
   error,
+  counselorColor,
 }: {
   card: Card;
   form: Record<string, string>;
@@ -649,173 +632,175 @@ function CardEditForm({
   onCancel: () => void;
   saving: boolean;
   error: string | null;
+  counselorColor: string;
 }) {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-3 border-2 border-red-600 bg-red-50 rounded-lg text-red-800 font-sans text-sm">
+        <div className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 font-sans text-sm">
           {error}
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="card-detail-section">
         {card.card_type === 'world' && (
           <>
-            <div className="space-y-1">
-              <label className="text-sm font-semibold text-gba-text">
-                Title <span className="text-red-600">*</span>
+            <div className="mb-4">
+              <label className="card-detail-label">
+                Title <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={form.title || ''}
                 onChange={(e) => onChange('title', e.target.value)}
                 maxLength={160}
-                className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent"
+                className="card-input"
                 placeholder="Event title..."
               />
-              <p className="text-xs text-gba-text opacity-60 text-right">
+              <div className="text-xs text-gray-400 text-right mt-1">
                 {form.title?.length || 0} / 160
-              </p>
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-semibold text-gba-text">Event Type</label>
+            <div>
+              <label className="card-detail-label">Event Type</label>
               <input
                 type="text"
                 value={form.event_type || ''}
                 onChange={(e) => onChange('event_type', e.target.value)}
                 maxLength={200}
-                className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent"
+                className="card-input"
                 placeholder="e.g., Career, Relationship, Personal..."
               />
-              <p className="text-xs text-gba-text opacity-60 text-right">
+              <div className="text-xs text-gray-400 text-right mt-1">
                 {form.event_type?.length || 0} / 200
-              </p>
+              </div>
             </div>
           </>
         )}
 
         {card.card_type === 'character' && (
           <>
-            <div className="space-y-1">
-              <label className="text-sm font-semibold text-gba-text">
-                Name <span className="text-red-600">*</span>
+            <div className="mb-4">
+              <label className="card-detail-label">
+                Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={form.name || ''}
                 onChange={(e) => onChange('name', e.target.value)}
                 maxLength={160}
-                className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent"
+                className="card-input"
                 placeholder="Character name..."
               />
-              <p className="text-xs text-gba-text opacity-60 text-right">
+              <div className="text-xs text-gray-400 text-right mt-1">
                 {form.name?.length || 0} / 160
-              </p>
+              </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-sm font-semibold text-gba-text">Relationship</label>
+            <div>
+              <label className="card-detail-label">Relationship</label>
               <input
                 type="text"
                 value={form.relationship_type || ''}
                 onChange={(e) => onChange('relationship_type', e.target.value)}
                 maxLength={200}
-                className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent"
+                className="card-input"
                 placeholder="e.g., Family, Friend, Colleague..."
               />
-              <p className="text-xs text-gba-text opacity-60 text-right">
+              <div className="text-xs text-gray-400 text-right mt-1">
                 {form.relationship_type?.length || 0} / 200
-              </p>
+              </div>
             </div>
           </>
         )}
 
         {card.card_type === 'self' && form.name !== undefined && (
-          <div className="space-y-1">
-            <label className="text-sm font-semibold text-gba-text">Name</label>
+          <div>
+            <label className="card-detail-label">Name</label>
             <input
               type="text"
               value={form.name || ''}
               onChange={(e) => onChange('name', e.target.value)}
               maxLength={160}
-              className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent"
+              className="card-input"
               placeholder="Your name..."
             />
-            <p className="text-xs text-gba-text opacity-60 text-right">
+            <div className="text-xs text-gray-400 text-right mt-1">
               {form.name?.length || 0} / 160
-            </p>
+            </div>
           </div>
         )}
 
         {(card.card_type === 'character' || card.card_type === 'self') && (
-          <div className="space-y-1">
-            <label className="text-sm font-semibold text-gba-text">
-              Personality {card.card_type === 'character' && <span className="text-red-600">*</span>}
+          <div className="mt-4">
+            <label className="card-detail-label">
+              Personality {card.card_type === 'character' && <span className="text-red-500">*</span>}
             </label>
             <textarea
               value={form.personality || ''}
               onChange={(e) => onChange('personality', e.target.value)}
               maxLength={8000}
               rows={4}
-              className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent resize-none"
+              className="card-textarea"
               placeholder="Describe their personality..."
             />
-            <p className="text-xs text-gba-text opacity-60 text-right">
+            <div className="text-xs text-gray-400 text-right mt-1">
               {form.personality?.length || 0} / 8000
-            </p>
+            </div>
           </div>
         )}
 
         {card.card_type === 'self' && form.background !== undefined && (
-          <div className="space-y-1">
-            <label className="text-sm font-semibold text-gba-text">Background</label>
+          <div className="mt-4">
+            <label className="card-detail-label">Background</label>
             <textarea
               value={form.background || ''}
               onChange={(e) => onChange('background', e.target.value)}
               maxLength={8000}
               rows={3}
-              className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent resize-none"
+              className="card-textarea"
               placeholder="Your background..."
             />
-            <p className="text-xs text-gba-text opacity-60 text-right">
+            <div className="text-xs text-gray-400 text-right mt-1">
               {form.background?.length || 0} / 8000
-            </p>
+            </div>
           </div>
         )}
 
         {(card.card_type === 'world' || card.card_type === 'self') && form.description !== undefined && (
-          <div className="space-y-1">
-            <label className="text-sm font-semibold text-gba-text">
-              Description {card.card_type === 'world' && <span className="text-red-600">*</span>}
+          <div className="mt-4">
+            <label className="card-detail-label">
+              Description {card.card_type === 'world' && <span className="text-red-500">*</span>}
             </label>
             <textarea
               value={form.description || ''}
               onChange={(e) => onChange('description', e.target.value)}
               maxLength={8000}
               rows={6}
-              className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent resize-none"
+              className="card-textarea"
               placeholder="Describe in detail..."
             />
-            <p className="text-xs text-gba-text opacity-60 text-right">
+            <div className="text-xs text-gray-400 text-right mt-1">
               {form.description?.length || 0} / 8000
-            </p>
+            </div>
           </div>
         )}
       </div>
 
-      <div className="pt-4 border-t-2 border-gba-border flex gap-2">
+      <div className="flex gap-3 pt-2">
         <button
           onClick={onSave}
           disabled={saving}
-          className="flex-1 px-4 py-2 border-2 border-gba-border bg-gba-highlight font-sans font-medium hover:bg-gba-accent disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+          className="pill-button pill-button-primary flex-1"
+          style={{ background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)` }}
         >
           {saving ? 'Saving...' : 'Save Changes'}
         </button>
         <button
           onClick={onCancel}
           disabled={saving}
-          className="px-4 py-2 border-2 border-gba-border bg-gba-ui font-sans font-medium hover:bg-gba-highlight disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+          className="pill-button pill-button-secondary"
         >
           Cancel
         </button>
@@ -827,262 +812,211 @@ function CardEditForm({
 function CardCreateForm({
   cardType,
   setCardType,
-  prompt,
-  generatedCard,
   form,
   onChange,
-  onGenerate,
   onSave,
   onCancel,
-  generating,
   saving,
   error,
-  onPromptChange,
+  counselorColor,
 }: {
   cardType: CardType;
   setCardType: (type: CardType) => void;
-  prompt: string;
-  generatedCard: Record<string, any> | null;
   form: Record<string, string>;
   onChange: (field: string, value: string) => void;
-  onGenerate: () => void;
   onSave: () => void;
   onCancel: () => void;
-  generating: boolean;
   saving: boolean;
   error: string | null;
-  onPromptChange: (value: string) => void;
+  counselorColor: string;
 }) {
   return (
     <div className="space-y-4">
       {error && (
-        <div className="p-3 border-2 border-red-600 bg-red-50 rounded-lg text-red-800 font-sans text-sm">
+        <div className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-700 font-sans text-sm">
           {error}
         </div>
       )}
 
-      {!generatedCard ? (
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <label className="text-sm font-semibold text-gba-text">Card Type</label>
-            <select
-              value={cardType}
-              onChange={(e) => setCardType(e.target.value as CardType)}
-              className="w-full px-4 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent min-h-[44px]"
+      <div className="card-detail-section">
+        <label className="card-detail-label mb-2 block">Card Type</label>
+        <div className="segmented-control">
+          {(['self', 'character', 'world'] as CardType[]).map((type) => (
+            <button
+              key={type}
+              onClick={() => setCardType(type)}
+              className={`segmented-control-item ${cardType === type ? 'active' : ''}`}
+              style={cardType === type ? { color: counselorColor } : { color: '#6B7280' }}
             >
-              <option value="self">Self Card</option>
-              <option value="character">Character Card</option>
-              <option value="world">World Card</option>
-            </select>
-          </div>
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          <div className="space-y-1">
-            <label className="text-sm font-semibold text-gba-text">
-              Describe the card
+      <div className="card-detail-section">
+        {cardType === 'world' && (
+          <>
+            <div className="mb-4">
+              <label className="card-detail-label">
+                Title <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.title || ''}
+                onChange={(e) => onChange('title', e.target.value)}
+                maxLength={160}
+                className="card-input"
+                placeholder="Event title..."
+              />
+              <div className="text-xs text-gray-400 text-right mt-1">
+                {form.title?.length || 0} / 160
+              </div>
+            </div>
+
+            <div>
+              <label className="card-detail-label">Event Type</label>
+              <input
+                type="text"
+                value={form.event_type || ''}
+                onChange={(e) => onChange('event_type', e.target.value)}
+                maxLength={200}
+                className="card-input"
+                placeholder="e.g., Career, Relationship, Personal..."
+              />
+              <div className="text-xs text-gray-400 text-right mt-1">
+                {form.event_type?.length || 0} / 200
+              </div>
+            </div>
+          </>
+        )}
+
+        {cardType === 'character' && (
+          <>
+            <div className="mb-4">
+              <label className="card-detail-label">
+                Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={form.name || ''}
+                onChange={(e) => onChange('name', e.target.value)}
+                maxLength={160}
+                className="card-input"
+                placeholder="Character name..."
+              />
+              <div className="text-xs text-gray-400 text-right mt-1">
+                {form.name?.length || 0} / 160
+              </div>
+            </div>
+
+            <div>
+              <label className="card-detail-label">Relationship</label>
+              <input
+                type="text"
+                value={form.relationship_type || ''}
+                onChange={(e) => onChange('relationship_type', e.target.value)}
+                maxLength={200}
+                className="card-input"
+                placeholder="e.g., Family, Friend, Colleague..."
+              />
+              <div className="text-xs text-gray-400 text-right mt-1">
+                {form.relationship_type?.length || 0} / 200
+              </div>
+            </div>
+          </>
+        )}
+
+        {cardType === 'self' && (
+          <div>
+            <label className="card-detail-label">Name</label>
+            <input
+              type="text"
+              value={form.name || ''}
+              onChange={(e) => onChange('name', e.target.value)}
+              maxLength={160}
+              className="card-input"
+              placeholder="Your name..."
+            />
+            <div className="text-xs text-gray-400 text-right mt-1">
+              {form.name?.length || 0} / 160
+            </div>
+          </div>
+        )}
+
+        {(cardType === 'character' || cardType === 'self') && (
+          <div className="mt-4">
+            <label className="card-detail-label">
+              Personality {cardType === 'character' && <span className="text-red-500">*</span>}
             </label>
             <textarea
-              value={prompt}
-              onChange={(e) => onPromptChange(e.target.value)}
-              placeholder={
-                cardType === 'character'
-                  ? 'My friend Alex, very supportive, works as a teacher...'
-                  : cardType === 'world'
-                  ? 'I got promoted last month, it was a big milestone...'
-                  : 'I love hiking and spending time in nature...'
-              }
-              className="w-full px-4 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent resize-none"
+              value={form.personality || ''}
+              onChange={(e) => onChange('personality', e.target.value)}
+              maxLength={8000}
               rows={4}
-              disabled={generating}
+              className="card-textarea"
+              placeholder="Describe their personality..."
             />
+            <div className="text-xs text-gray-400 text-right mt-1">
+              {form.personality?.length || 0} / 8000
+            </div>
           </div>
+        )}
 
-          <button
-            onClick={onGenerate}
-            disabled={!prompt.trim() || generating}
-            className="w-full px-4 py-2 border-2 border-gba-border bg-gba-highlight font-sans font-medium hover:bg-gba-accent disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2"
-          >
-            {generating ? (
-              <>
-                <LoadingSpinner size="sm" />
-                Generating...
-              </>
-            ) : (
-              'Generate with AI'
-            )}
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="p-3 bg-gba-highlight border-2 border-gba-border rounded-lg">
-            <p className="font-sans text-sm text-gba-text mb-2">
-              <strong>Card generated successfully!</strong> Review and edit below before saving.
-            </p>
+        {cardType === 'self' && (
+          <div className="mt-4">
+            <label className="card-detail-label">Background</label>
+            <textarea
+              value={form.background || ''}
+              onChange={(e) => onChange('background', e.target.value)}
+              maxLength={8000}
+              rows={3}
+              className="card-textarea"
+              placeholder="Your background..."
+            />
+            <div className="text-xs text-gray-400 text-right mt-1">
+              {form.background?.length || 0} / 8000
+            </div>
           </div>
+        )}
 
-          <div className="space-y-4">
-            {cardType === 'world' && (
-              <>
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gba-text">
-                    Title <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={form.title || ''}
-                    onChange={(e) => onChange('title', e.target.value)}
-                    maxLength={160}
-                    className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent"
-                    placeholder="Event title..."
-                  />
-                  <p className="text-xs text-gba-text opacity-60 text-right">
-                    {form.title?.length || 0} / 160
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gba-text">Event Type</label>
-                  <input
-                    type="text"
-                    value={form.event_type || ''}
-                    onChange={(e) => onChange('event_type', e.target.value)}
-                    maxLength={200}
-                    className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent"
-                    placeholder="e.g., Career, Relationship, Personal..."
-                  />
-                  <p className="text-xs text-gba-text opacity-60 text-right">
-                    {form.event_type?.length || 0} / 200
-                  </p>
-                </div>
-              </>
-            )}
-
-            {cardType === 'character' && (
-              <>
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gba-text">
-                    Name <span className="text-red-600">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={form.name || ''}
-                    onChange={(e) => onChange('name', e.target.value)}
-                    maxLength={160}
-                    className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent"
-                    placeholder="Character name..."
-                  />
-                  <p className="text-xs text-gba-text opacity-60 text-right">
-                    {form.name?.length || 0} / 160
-                  </p>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-sm font-semibold text-gba-text">Relationship</label>
-                  <input
-                    type="text"
-                    value={form.relationship_type || ''}
-                    onChange={(e) => onChange('relationship_type', e.target.value)}
-                    maxLength={200}
-                    className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent"
-                    placeholder="e.g., Family, Friend, Colleague..."
-                  />
-                  <p className="text-xs text-gba-text opacity-60 text-right">
-                    {form.relationship_type?.length || 0} / 200
-                  </p>
-                </div>
-              </>
-            )}
-
-            {cardType === 'self' && form.name !== undefined && (
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gba-text">Name</label>
-                <input
-                  type="text"
-                  value={form.name || ''}
-                  onChange={(e) => onChange('name', e.target.value)}
-                  maxLength={160}
-                  className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent"
-                  placeholder="Your name..."
-                />
-                <p className="text-xs text-gba-text opacity-60 text-right">
-                  {form.name?.length || 0} / 160
-                </p>
-              </div>
-            )}
-
-            {(cardType === 'character' || cardType === 'self') && (
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gba-text">
-                  Personality {cardType === 'character' && <span className="text-red-600">*</span>}
-                </label>
-                <textarea
-                  value={form.personality || ''}
-                  onChange={(e) => onChange('personality', e.target.value)}
-                  maxLength={8000}
-                  rows={4}
-                  className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent resize-none"
-                  placeholder="Describe their personality..."
-                />
-                <p className="text-xs text-gba-text opacity-60 text-right">
-                  {form.personality?.length || 0} / 8000
-                </p>
-              </div>
-            )}
-
-            {cardType === 'self' && form.background !== undefined && (
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gba-text">Background</label>
-                <textarea
-                  value={form.background || ''}
-                  onChange={(e) => onChange('background', e.target.value)}
-                  maxLength={8000}
-                  rows={3}
-                  className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent resize-none"
-                  placeholder="Your background..."
-                />
-                <p className="text-xs text-gba-text opacity-60 text-right">
-                  {form.background?.length || 0} / 8000
-                </p>
-              </div>
-            )}
-
-            {(cardType === 'world' || cardType === 'self') && form.description !== undefined && (
-              <div className="space-y-1">
-                <label className="text-sm font-semibold text-gba-text">
-                  Description {cardType === 'world' && <span className="text-red-600">*</span>}
-                </label>
-                <textarea
-                  value={form.description || ''}
-                  onChange={(e) => onChange('description', e.target.value)}
-                  maxLength={8000}
-                  rows={6}
-                  className="w-full px-3 py-2 border-2 border-gba-border bg-gba-bg font-sans text-gba-text focus:outline-none focus:border-gba-accent resize-none"
-                  placeholder="Describe in detail..."
-                />
-                <p className="text-xs text-gba-text opacity-60 text-right">
-                  {form.description?.length || 0} / 8000
-                </p>
-              </div>
-            )}
+        {(cardType === 'world' || cardType === 'self') && (
+          <div className="mt-4">
+            <label className="card-detail-label">
+              Description {cardType === 'world' && <span className="text-red-500">*</span>}
+            </label>
+            <textarea
+              value={form.description || ''}
+              onChange={(e) => onChange('description', e.target.value)}
+              maxLength={8000}
+              rows={6}
+              className="card-textarea"
+              placeholder="Describe in detail..."
+            />
+            <div className="text-xs text-gray-400 text-right mt-1">
+              {form.description?.length || 0} / 8000
+            </div>
           </div>
+        )}
+      </div>
 
-          <div className="pt-4 border-t-2 border-gba-border flex gap-2">
-            <button
-              onClick={onSave}
-              disabled={saving}
-              className="flex-1 px-4 py-2 border-2 border-gba-border bg-gba-highlight font-sans font-medium hover:bg-gba-accent disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
-            >
-              {saving ? 'Saving...' : 'Save Card'}
-            </button>
-            <button
-              onClick={onCancel}
-              disabled={saving}
-              className="px-4 py-2 border-2 border-gba-border bg-gba-ui font-sans font-medium hover:bg-gba-highlight disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      <div className="flex gap-3 pt-2">
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="pill-button pill-button-primary flex-1"
+          style={{ background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)` }}
+        >
+          {saving ? 'Saving...' : 'Save Card'}
+        </button>
+        <button
+          onClick={onCancel}
+          disabled={saving}
+          className="pill-button pill-button-secondary"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
   );
 }

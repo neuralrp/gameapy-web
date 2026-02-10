@@ -5,6 +5,7 @@ import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
 import type { Message } from '../types/message';
+import type { Counselor } from '../types/counselor';
 
 export function ChatScreen() {
   const { counselor, setCounselor, clientLoading, sessionId, sessionMessageCount, incrementSessionMessageCount, resetSessionMessageCount, showToast } = useApp();
@@ -118,12 +119,14 @@ export function ChatScreen() {
   const counselorColor = counselor?.visuals.selectionCard.backgroundColor || '#E8D0A0';
   const counselorTextColor = counselor?.visuals.textColor || '#483018';
 
+  console.log('ChatScreen rendering counselor visuals:', counselor?.visuals);
+
   return (
-    <div className="h-screen flex flex-col fade-in" style={{ backgroundColor: counselorColor }}>
+    <div className="h-screen flex flex-col fade-in" style={{ backgroundColor: `${counselorColor} !important` }}>
       {/* Header - Taller */}
-      <header 
+      <header
         className="flex items-center justify-between px-4 py-5 border-b-2 border-gba-border flex-shrink-0"
-        style={{ backgroundColor: counselorColor, color: counselorTextColor }}
+        style={{ backgroundColor: `${counselorColor} !important`, color: `${counselorTextColor} !important` }}
       >
         <button
           onClick={handleBack}
@@ -148,9 +151,9 @@ export function ChatScreen() {
       </header>
 
       {/* Chat Area */}
-      <main 
+      <main
         className="flex-1 flex flex-col p-4 overflow-y-auto"
-        style={{ backgroundColor: counselorColor }}
+        style={{ backgroundColor: `${counselorColor} !important` }}
       >
         {messages.length === 0 && (
           <div className="flex-1 flex items-center justify-center text-center">
@@ -198,9 +201,9 @@ export function ChatScreen() {
       </main>
 
       {/* Input Area */}
-      <footer 
+      <footer
         className="p-4 border-t-2 border-gba-border flex-shrink-0"
-        style={{ backgroundColor: `${counselorColor}99` }}
+        style={{ backgroundColor: `${counselorColor}99 !important` }}
       >
         <div className="flex gap-3 items-end">
           <input
@@ -217,8 +220,8 @@ export function ChatScreen() {
             onClick={handleSend}
             disabled={!input.trim() || isLoading || !sessionId}
             className="send-button min-h-[44px] min-w-[44px]"
-            style={{ 
-              backgroundColor: counselor?.visuals.borderColor || '#306850'
+            style={{
+              backgroundColor: `${counselor?.visuals.borderColor || '#306850'} !important`
             }}
             aria-label="Send message"
           >
