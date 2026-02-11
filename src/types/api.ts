@@ -180,3 +180,14 @@ export interface CardSaveRequest {
   card_type: 'self' | 'character' | 'world';
   card_data: Record<string, any>;
 }
+
+export interface StreamChunk {
+  type: 'content' | 'done' | 'error';
+  content?: string;
+  data?: {
+    cards_loaded: number;
+    counselor_switched?: boolean;
+    new_counselor?: CounselorFromDB['profile']['data'];
+  };
+  error?: string;
+}

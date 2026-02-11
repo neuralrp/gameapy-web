@@ -12,6 +12,7 @@ import type {
   CardGenerateRequest,
   CardGenerateResponse,
   CardSaveRequest,
+  StreamChunk,
 } from '../types/api';
 import type { CounselorFromDB } from '../types/counselor';
 import type { Card } from '../types/card';
@@ -132,6 +133,83 @@ export class ApiService {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  async *sendMessageStream(data: ChatRequest): AsyncGenerator<StreamChunk, void> {
+    const url = `${this.baseUrl}${API_ENDPOINTS.chat}`;
+    const timestamp = new Date().toISOString();
+
+    try {
+      console.log(`[${timestamp}] API Stream Request: POST ${url}`);
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({
+          message: `HTTP ${response.status}: ${response.statusText}`,
+        }));
+
+        console.error(`[${timestamp}] API Stream Error:`, {
+          url,
+          status: response.status,
+          statusText: response.statusText,
+          error,
+        });
+
+        throw new Error(error.message || `HTTP ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (!reader) {
+        throw new Error('Response body is not readable');
+      }
+
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const chunk: StreamChunk = JSON.parse(line.slice(6));
+              yield chunk;
+            } catch (e) {
+              console.error('Failed to parse SSE chunk:', line);
+            }
+          }
+        }
+      }
+
+      console.log(`[${timestamp}] API Stream Success:`, { url, status: response.status });
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error(`[${timestamp}] Network Error:`, { url, error: error.message });
+        throw new Error("Couldn't reach the server. Is it running?");
+      }
+
+      console.error(`[${timestamp}] Stream Request Failed:`, {
+        url,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+
+      throw error;
+    }
   }
 
   async getCards(clientId: number): Promise<APIResponse<{ items: Card[] }>> {

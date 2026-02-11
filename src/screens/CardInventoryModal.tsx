@@ -108,6 +108,13 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
         await apiService.pinCard(card.card_type, card.id);
       }
       await loadCards();
+
+      if (selectedCard && selectedCard.id === card.id) {
+        const updatedCard = cards.find(c => c.id === card.id);
+        if (updatedCard) {
+          setSelectedCard(updatedCard);
+        }
+      }
     } catch (err) {
       console.error('Failed to toggle pin:', err);
       setError(err instanceof Error ? err.message : 'Failed to update pin status');
@@ -122,6 +129,13 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     try {
       await apiService.toggleAutoUpdate(card.card_type, card.id);
       await loadCards();
+
+      if (selectedCard && selectedCard.id === card.id) {
+        const updatedCard = cards.find(c => c.id === card.id);
+        if (updatedCard) {
+          setSelectedCard(updatedCard);
+        }
+      }
     } catch (err) {
       console.error('Failed to toggle auto-update:', err);
       setError(err instanceof Error ? err.message : 'Failed to update auto-update');

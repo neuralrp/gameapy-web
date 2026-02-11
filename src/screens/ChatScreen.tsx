@@ -74,50 +74,94 @@ export function ChatScreen() {
     setInput('');
     setIsLoading(true);
 
-    try {
-      const response = await apiService.sendMessage({
-        session_id: sessionId,
-        message_data: {
-          role: 'user',
-          content: userMessage.content,
-        },
-      });
+    const assistantMessageId = crypto.randomUUID();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, assistantMessage]);
 
-      const aiMessage: Message = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: response.data.ai_response,
-        timestamp: new Date().toISOString(),
-        cards_loaded: response.data.cards_loaded,
-      };
+    let retries = 0;
+    const maxRetries = 3;
 
-      setMessages(prev => [...prev, aiMessage]);
+    while (retries < maxRetries) {
+      try {
+        const stream = apiService.sendMessageStream({
+          session_id: sessionId,
+          message_data: {
+            role: 'user',
+            content: userMessage.content,
+          },
+        });
 
-      incrementSessionMessageCount();
+        let fullContent = '';
 
-      if (response.data.counselor_switched && response.data.new_counselor) {
-        const newCounselor: Counselor = {
-          id: counselor?.id || 0,
-          name: response.data.new_counselor.name,
-          description: response.data.new_counselor.who_you_are,
-          specialty: response.data.new_counselor.your_vibe,
-          visuals: {
-            ...counselor?.visuals,
-            ...response.data.new_counselor.visuals,
-          } as Counselor['visuals'],
-        };
-        setCounselor(newCounselor);
-        showToast({ message: `✨ ${response.data.new_counselor.name} has joined the conversation!`, type: 'success' });
+        for await (const chunk of stream) {
+          if (chunk.type === 'content' && chunk.content) {
+            fullContent += chunk.content;
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.id === assistantMessageId
+                  ? { ...msg, content: fullContent }
+                  : msg
+              )
+            );
+            requestAnimationFrame(() => scrollToBottom());
+          } else if (chunk.type === 'done' && chunk.data) {
+            const { cards_loaded, counselor_switched, new_counselor } = chunk.data;
+
+            setMessages(prev =>
+              prev.map(msg =>
+                msg.id === assistantMessageId
+                  ? { ...msg, cards_loaded }
+                  : msg
+              )
+            );
+
+            incrementSessionMessageCount();
+
+            if (counselor_switched && new_counselor) {
+              const newCounselorData: Counselor = {
+                id: counselor?.id || 0,
+                name: new_counselor.name,
+                description: new_counselor.who_you_are,
+                specialty: new_counselor.your_vibe,
+                visuals: {
+                  ...counselor?.visuals,
+                  ...new_counselor.visuals,
+                } as Counselor['visuals'],
+              };
+              setCounselor(newCounselorData);
+              showToast({
+                message: `✨ ${new_counselor.name} has joined the conversation!`,
+                type: 'success',
+              });
+            }
+
+            if (sessionMessageCount > 0 && (sessionMessageCount + 1) % 5 === 0) {
+              triggerCardAnalysis();
+            }
+          } else if (chunk.type === 'error') {
+            throw new Error(chunk.error || 'Stream error occurred');
+          }
+        }
+
+        break;
+      } catch (err) {
+        retries++;
+        if (retries >= maxRetries) {
+          showToast({
+            message: err instanceof Error ? err.message : 'Failed to send message',
+            type: 'error',
+          });
+          setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
+        }
       }
-
-      if (sessionMessageCount > 0 && (sessionMessageCount + 1) % 5 === 0) {
-        triggerCardAnalysis();
-      }
-    } catch (err) {
-      showToast({ message: err instanceof Error ? err.message : 'Failed to send message', type: 'error' });
-    } finally {
-      setIsLoading(false);
     }
+
+    setIsLoading(false);
   };
 
   if (clientLoading) {
