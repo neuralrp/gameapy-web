@@ -35,6 +35,7 @@ function getCardFields(card: Card): Array<{ label: string; value: string; key: s
   } else if (card.card_type === 'character') {
     fields.push({ label: 'Name', value: payload.name || '', key: 'name' });
     if (payload.relationship_type) fields.push({ label: 'Relationship', value: payload.relationship_type, key: 'relationship_type' });
+    if (payload.relationship_label) fields.push({ label: 'Custom Label', value: payload.relationship_label, key: 'relationship_label' });
     if (payload.personality) fields.push({ label: 'Personality', value: payload.personality, key: 'personality' });
   } else {
     if (payload.name) fields.push({ label: 'Name', value: payload.name, key: 'name' });
@@ -155,6 +156,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
       return {
         name: payload.name || '',
         relationship_type: payload.relationship_type || '',
+        relationship_label: payload.relationship_label || '',
         personality: payload.personality || '',
       };
     } else {
@@ -229,6 +231,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
       if (!form.name.trim()) errors.push('Name is required');
       if (form.name.length > 160) errors.push('Name must be 160 characters or less');
       if (form.relationship_type.length > 200) errors.push('Relationship type must be 200 characters or less');
+      if (form.relationship_label && form.relationship_label.length > 200) errors.push('Custom label must be 200 characters or less');
       if (!form.personality.trim()) errors.push('Personality is required');
       if (form.personality.length > 8000) errors.push('Personality must be 8000 characters or less');
     } else {
@@ -287,7 +290,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     if (cardType === 'world') {
       return { title: '', description: '', event_type: '' };
     } else if (cardType === 'character') {
-      return { name: '', relationship_type: '', personality: '' };
+      return { name: '', relationship_type: '', relationship_label: '', personality: '' };
     } else {
       return { name: '', personality: '', background: '', description: '' };
     }
@@ -712,6 +715,21 @@ function CardEditForm({
                 {form.relationship_type?.length || 0} / 200
               </div>
             </div>
+
+            <div>
+              <label className="card-detail-label">Custom Label (Optional)</label>
+              <input
+                type="text"
+                value={form.relationship_label || ''}
+                onChange={(e) => onChange('relationship_label', e.target.value)}
+                maxLength={200}
+                className="card-input"
+                placeholder="e.g., Sister, Mother, Best Friend..."
+              />
+              <div className="text-xs text-gray-400 text-right mt-1">
+                {form.relationship_label?.length || 0} / 200
+              </div>
+            </div>
           </>
         )}
 
@@ -922,6 +940,21 @@ function CardCreateForm({
               />
               <div className="text-xs text-gray-400 text-right mt-1">
                 {form.relationship_type?.length || 0} / 200
+              </div>
+            </div>
+
+            <div>
+              <label className="card-detail-label">Custom Label (Optional)</label>
+              <input
+                type="text"
+                value={form.relationship_label || ''}
+                onChange={(e) => onChange('relationship_label', e.target.value)}
+                maxLength={200}
+                className="card-input"
+                placeholder="e.g., Sister, Mother, Best Friend..."
+              />
+              <div className="text-xs text-gray-400 text-right mt-1">
+                {form.relationship_label?.length || 0} / 200
               </div>
             </div>
           </>

@@ -5,13 +5,22 @@ import { apiService } from '../services/api';
 import type { Counselor } from '../types/counselor';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
+import { HealthStatusIcon } from '../components/shared/HealthStatusIcon';
+import { HealthStatusModal } from '../components/shared/HealthStatusModal';
 
 export function CounselorSelection() {
-  const { setCounselor, setShowInventoryFullScreen } = useApp();
+  const { setCounselor, setShowInventoryFullScreen, startHealthChecks, stopHealthChecks, setShowHealthModal } = useApp();
   const [selectedCounselor, setSelectedCounselor] = useState<Counselor | null>(null);
   const [counselors, setCounselors] = useState<Counselor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    startHealthChecks();
+    return () => {
+      stopHealthChecks();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchCounselors = async () => {
@@ -97,6 +106,14 @@ export function CounselorSelection() {
           <Layers className="w-6 h-6 text-gba-text" />
         </button>
       )}
+
+      {/* Health Status Button - Top Left */}
+      {!isLoading && !error && (
+        <HealthStatusIcon onClick={() => setShowHealthModal(true)} className="absolute top-4 left-4" />
+      )}
+
+      {/* Health Status Modal */}
+      <HealthStatusModal />
     </div>
   );
 }

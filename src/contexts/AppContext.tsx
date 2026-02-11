@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { Counselor } from '../types/counselor';
 import type { APIResponse } from '../types/api';
+import type { HealthCheck } from '../types/health';
 import { apiService } from '../services/api';
 
 interface Toast {
@@ -32,6 +33,16 @@ interface AppContextType {
   toast: Toast | null;
   showToast: (toast: Toast) => void;
   hideToast: () => void;
+  healthStatus: HealthCheck | null;
+  lastHealthCheck: string | null;
+  healthError: string | null;
+  isCheckingHealth: boolean;
+  consecutiveHealthFailures: number;
+  showHealthModal: boolean;
+  setShowHealthModal: (show: boolean) => void;
+  startHealthChecks: () => void;
+  stopHealthChecks: () => void;
+  checkHealthNow: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -47,6 +58,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [guideSessionId, setGuideSessionId] = useState<number | null>(null);
   const [sessionMessageCount, setSessionMessageCount] = useState(0);
   const [toast, setToast] = useState<Toast | null>(null);
+  const [healthStatus, setHealthStatus] = useState<HealthCheck | null>(null);
+  const [lastHealthCheck, setLastHealthCheck] = useState<string | null>(null);
+  const [healthError, setHealthError] = useState<string | null>(null);
+  const [isCheckingHealth, setIsCheckingHealth] = useState(false);
+  const [consecutiveHealthFailures, setConsecutiveHealthFailures] = useState(0);
+  const [showHealthModal, setShowHealthModal] = useState(false);
+  const healthIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const calculateNextRetryDelay = () => {
+    if (consecutiveHealthFailures === 0) {
+      return 45000;
+    }
+    const delay = Math.min(5 * Math.pow(2, consecutiveHealthFailures - 1), 45000);
+    return Math.max(delay, 5000);
+  };
+
+  const scheduleNextHealthCheck = () => {
+    if (healthIntervalRef.current) {
+      clearInterval(healthIntervalRef.current);
+    }
+    const delay = calculateNextRetryDelay();
+    healthIntervalRef.current = setInterval(checkHealthNow, delay);
+  };
 
   useEffect(() => {
     initializeClient();
@@ -153,6 +187,51 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setToast(null);
   };
 
+  const checkHealthNow = async (notifyOnRestore = false) => {
+    setIsCheckingHealth(true);
+    setHealthError(null);
+
+    try {
+      const health = await apiService.checkHealth();
+      setHealthStatus(health);
+      setLastHealthCheck(new Date().toISOString());
+      if (consecutiveHealthFailures > 0 && notifyOnRestore) {
+        showToast({ message: '✅ Connection restored', type: 'success' });
+      }
+      setConsecutiveHealthFailures(0);
+      scheduleNextHealthCheck();
+    } catch (error) {
+      setHealthError(error instanceof Error ? error.message : 'Health check failed');
+      setConsecutiveHealthFailures(prev => {
+        if (prev === 0) {
+          showToast({ message: '⚠️ Connection lost, retrying...', type: 'error' });
+        }
+        return prev + 1;
+      });
+      scheduleNextHealthCheck();
+    } finally {
+      setIsCheckingHealth(false);
+    }
+  };
+
+  const startHealthChecks = () => {
+    setConsecutiveHealthFailures(0);
+    checkHealthNow();
+  };
+
+  const stopHealthChecks = () => {
+    if (healthIntervalRef.current) {
+      clearInterval(healthIntervalRef.current);
+      healthIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopHealthChecks();
+    };
+  }, []);
+
   return (
     <AppContext.Provider
       value={{
@@ -178,6 +257,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toast,
         showToast,
         hideToast,
+        healthStatus,
+        lastHealthCheck,
+        healthError,
+        isCheckingHealth,
+        consecutiveHealthFailures,
+        showHealthModal,
+        setShowHealthModal,
+        startHealthChecks,
+        stopHealthChecks,
+        checkHealthNow,
       }}
     >
       {children}

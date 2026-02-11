@@ -25,6 +25,7 @@ export interface CharacterCard extends BaseCard {
   payload: {
     name: string;
     relationship_type: string;
+    relationship_label?: string;
     personality: string;
     [key: string]: any;
   };

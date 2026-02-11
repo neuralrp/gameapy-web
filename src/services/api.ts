@@ -16,6 +16,7 @@ import type {
 import type { CounselorFromDB } from '../types/counselor';
 import type { Card } from '../types/card';
 import type { Counselor } from '../types/counselor';
+import type { HealthCheck } from '../types/health';
 
 function transformCounselorFromDB(dbCounselor: CounselorFromDB): Counselor {
   const data = dbCounselor.profile.data;
@@ -138,14 +139,14 @@ export class ApiService {
   }
 
   async updateCard(type: string, id: number, data: Record<string, any>): Promise<any> {
-    return this.request(API_ENDPOINTS.updateCard(type, id), {
+    return this.request(API_ENDPOINTS.updateCard(id), {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ ...data, card_type: type }),
     });
   }
 
   async toggleAutoUpdate(type: string, id: number): Promise<any> {
-    return this.request(API_ENDPOINTS.toggleAutoUpdate(type, id), {
+    return this.request(`${API_ENDPOINTS.toggleAutoUpdate(id)}?card_type=${type}`, {
       method: 'PUT',
     });
   }
@@ -216,6 +217,10 @@ export class ApiService {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  }
+
+  async checkHealth(): Promise<HealthCheck> {
+    return this.request<HealthCheck>(API_ENDPOINTS.health);
   }
 }
 

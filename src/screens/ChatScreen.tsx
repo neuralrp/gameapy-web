@@ -2,18 +2,27 @@ import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, ArrowUp } from 'lucide-react';
 import { CounselorInfoModal } from '../components/counselor/CounselorInfoModal';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
+import { HealthStatusIcon } from '../components/shared/HealthStatusIcon';
+import { HealthStatusModal } from '../components/shared/HealthStatusModal';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
 import type { Message } from '../types/message';
 import type { Counselor } from '../types/counselor';
 
 export function ChatScreen() {
-  const { counselor, setCounselor, clientLoading, sessionId, sessionMessageCount, incrementSessionMessageCount, resetSessionMessageCount, showToast } = useApp();
+  const { counselor, setCounselor, clientLoading, sessionId, sessionMessageCount, incrementSessionMessageCount, resetSessionMessageCount, showToast, startHealthChecks, stopHealthChecks, setShowHealthModal } = useApp();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showCounselorInfo, setShowCounselorInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    startHealthChecks();
+    return () => {
+      stopHealthChecks();
+    };
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -140,14 +149,14 @@ export function ChatScreen() {
           onClick={() => counselor && setShowCounselorInfo(true)}
           className="flex-1 text-center"
         >
-          <h1 
+          <h1
             className="font-retro text-2xl underline cursor-pointer"
             style={{ color: counselorTextColor }}
           >
             {counselor?.name}
           </h1>
         </button>
-        <div className="w-[44px]" />
+        <HealthStatusIcon onClick={() => setShowHealthModal(true)} />
       </header>
 
       {/* Chat Area */}
@@ -245,6 +254,9 @@ export function ChatScreen() {
           onClose={() => setShowCounselorInfo(false)}
         />
       )}
+
+      {/* Health Status Modal */}
+      <HealthStatusModal />
     </div>
   );
 }

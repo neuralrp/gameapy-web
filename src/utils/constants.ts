@@ -8,8 +8,8 @@ export const API_ENDPOINTS = {
   cards: '/api/v1/cards',
   generateCard: '/api/v1/cards/generate-from-text',
   saveCard: '/api/v1/cards/save',
-  updateCard: (type: string, id: number) => `/api/v1/cards/${type}/${id}`,
-  toggleAutoUpdate: (type: string, id: number) => `/api/v1/cards/${type}/${id}/toggle-auto-update`,
+  updateCard: (id: number) => `/api/v1/cards/${id}`,
+  toggleAutoUpdate: (id: number) => `/api/v1/cards/${id}/toggle-auto-update`,
   pinCard: (type: string, id: number) => `/api/v1/cards/${type}/${id}/pin`,
   unpinCard: (type: string, id: number) => `/api/v1/cards/${type}/${id}/unpin`,
   clientCards: (clientId: number) => `/api/v1/clients/${clientId}/cards`,
@@ -19,4 +19,5 @@ export const API_ENDPOINTS = {
     confirmCard: '/api/v1/guide/conversation/confirm-card',
   },
   analyzeSession: (sessionId: number) => `/api/v1/sessions/${sessionId}/analyze`,
+  health: '/health',
 } as const;
