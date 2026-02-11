@@ -90,6 +90,17 @@ body {
   box-shadow: inset 0 0 20px rgba(72, 48, 24, 0.2);
 }
 
+/* Responsive counselor image sizing */
+.counselor-image {
+  background-size: contain;
+}
+
+@media (min-width: 768px) {
+  .counselor-image {
+    background-size: cover;
+  }
+}
+
 /* Icon button styles */
 .icon-button {
   box-shadow: 0 4px 12px rgba(72, 48, 24, 0.3);

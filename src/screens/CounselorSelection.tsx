@@ -92,11 +92,11 @@ export function CounselorSelection() {
                 className={`
                   color-block transition-all duration-200
                   ${selectedCounselor?.id === counselor.id ? 'selected' : ''}
+                  ${imageUrl ? 'counselor-image' : ''}
                 `}
                 style={{
                   backgroundImage: imageUrl ? `url(${imageUrl})` : undefined,
                   backgroundColor: !imageUrl ? bgColor : undefined,
-                  backgroundSize: 'cover',
                   backgroundPosition: 'center',
                   backgroundRepeat: 'no-repeat'
                 }}
