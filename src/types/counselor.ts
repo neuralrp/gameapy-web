@@ -21,6 +21,7 @@ export interface Counselor {
       hoverBackgroundColor: string;
       borderColor: string;
       textColor: string;
+      image?: string;
     };
     icon?: string;
   };
@@ -65,6 +66,7 @@ export type CounselorFromDB = {
           hoverBackgroundColor: string;
           borderColor: string;
           textColor: string;
+          image?: string;
         };
         icon?: string;
       };

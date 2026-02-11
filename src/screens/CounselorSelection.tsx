@@ -78,21 +78,32 @@ export function CounselorSelection() {
         </div>
       )}
 
-      {/* Counselor Color Grid */}
+      {/* Counselor Color/Image Grid */}
       {!isLoading && !error && (
         <div className="grid grid-cols-2 grid-rows-2 h-screen">
-          {counselors.map((counselor) => (
-            <button
-              key={counselor.id}
-              onClick={() => handleSelect(counselor)}
-              className={`
-                color-block transition-all duration-200
-                ${selectedCounselor?.id === counselor.id ? 'selected' : ''}
-              `}
-              style={{ backgroundColor: getCounselorColor(counselor) }}
-              aria-label={`Select ${counselor.name}`}
-            />
-          ))}
+          {counselors.map((counselor) => {
+            const imageUrl = counselor.visuals.selectionCard.image;
+            const bgColor = getCounselorColor(counselor);
+
+            return (
+              <button
+                key={counselor.id}
+                onClick={() => handleSelect(counselor)}
+                className={`
+                  color-block transition-all duration-200
+                  ${selectedCounselor?.id === counselor.id ? 'selected' : ''}
+                `}
+                style={{
+                  backgroundImage: imageUrl ? `url(${imageUrl})` : undefined,
+                  backgroundColor: !imageUrl ? bgColor : undefined,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat'
+                }}
+                aria-label={`Select ${counselor.name}`}
+              />
+            );
+          })}
         </div>
       )}
 
