@@ -184,12 +184,17 @@ export class ApiService {
         buffer = lines.pop() || '';
 
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          const trimmedLine = line.trim();
+          if (trimmedLine.startsWith('data: ')) {
             try {
-              const chunk: StreamChunk = JSON.parse(line.slice(6));
+              const jsonStr = trimmedLine.slice(6);
+              const chunk: StreamChunk = JSON.parse(jsonStr);
               yield chunk;
             } catch (e) {
-              console.error('Failed to parse SSE chunk:', line);
+              console.error(`[${timestamp}] Failed to parse SSE chunk:`, {
+                rawLine: trimmedLine,
+                error: e instanceof Error ? e.message : e,
+              });
             }
           }
         }
