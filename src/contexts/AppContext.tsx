@@ -12,6 +12,7 @@ interface Toast {
 
 interface AppContextType {
   clientId: number | null;
+  setClientId: (id: number | null) => void;
   clientLoading: boolean;
   sessionId: number | null;
   counselor: Counselor | null;
@@ -43,6 +44,11 @@ interface AppContextType {
   startHealthChecks: () => void;
   stopHealthChecks: () => void;
   checkHealthNow: () => Promise<void>;
+  // Recovery code
+  recoveryCode: string | null;
+  setRecoveryCode: (code: string | null) => void;
+  showRecoveryCodeModal: boolean;
+  setShowRecoveryCodeModal: (show: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -65,6 +71,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [consecutiveHealthFailures, setConsecutiveHealthFailures] = useState(0);
   const [showHealthModal, setShowHealthModal] = useState(false);
   const healthIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Recovery code state
+  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
+  const [showRecoveryCodeModal, setShowRecoveryCodeModal] = useState(false);
 
   const calculateNextRetryDelay = () => {
     if (consecutiveHealthFailures === 0) {
@@ -103,13 +112,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
         goals: [],
         presenting_issues: [],
         life_events: [],
-      }) as APIResponse<{ client_id: number }>;
+      }) as APIResponse<{ client_id: number; recovery_code: string }>;
 
       if (response.success && response.data?.client_id) {
         const newClientId = response.data.client_id;
         localStorage.setItem('gameapy_client_id_int', newClientId.toString());
         localStorage.setItem('gameapy_session_id', '');
         setClientId(newClientId);
+        
+        // Store recovery code and show modal for new clients
+        if (response.data.recovery_code) {
+          setRecoveryCode(response.data.recovery_code);
+          setShowRecoveryCodeModal(true);
+        }
       }
     } catch (error) {
       console.error('Failed to create client:', error);
@@ -236,6 +251,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider
       value={{
         clientId,
+        setClientId,
         clientLoading,
         sessionId,
         counselor,
@@ -267,6 +283,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         startHealthChecks,
         stopHealthChecks,
         checkHealthNow,
+        // Recovery code
+        recoveryCode,
+        setRecoveryCode,
+        showRecoveryCodeModal,
+        setShowRecoveryCodeModal,
       }}
     >
       {children}

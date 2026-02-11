@@ -20,4 +20,7 @@ export const API_ENDPOINTS = {
   },
   analyzeSession: (sessionId: number) => `/api/v1/sessions/${sessionId}/analyze`,
   health: '/health',
+  generateRecoveryCode: (clientId: number) => `/api/v1/recovery/generate?client_id=${clientId}`,
+  validateRecoveryCode: '/api/v1/recovery/validate',
+  recoveryStatus: (clientId: number) => `/api/v1/recovery/status/${clientId}`,
 } as const;

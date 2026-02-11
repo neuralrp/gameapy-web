@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Layers } from 'lucide-react';
+import { Layers, KeyRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
 import type { Counselor } from '../types/counselor';
@@ -121,6 +122,17 @@ export function CounselorSelection() {
       {/* Health Status Button - Top Left */}
       {!isLoading && !error && (
         <HealthStatusIcon onClick={() => setShowHealthModal(true)} className="absolute top-4 left-4" />
+      )}
+
+      {/* Recover Account Link - Bottom Center */}
+      {!isLoading && !error && (
+        <Link
+          to="/recover"
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 text-xs text-[#483018]/70 hover:text-[#483018] transition-colors"
+        >
+          <KeyRound className="h-3 w-3" />
+          Recover Account
+        </Link>
       )}
 
       {/* Health Status Modal */}

@@ -305,6 +305,28 @@ export class ApiService {
   async checkHealth(): Promise<HealthCheck> {
     return this.request<HealthCheck>(API_ENDPOINTS.health);
   }
+
+  // Recovery Code API
+  async generateRecoveryCode(clientId: number): Promise<APIResponse<{ recovery_code: string }>> {
+    return this.request(API_ENDPOINTS.generateRecoveryCode(clientId), {
+      method: 'POST',
+    });
+  }
+
+  async validateRecoveryCode(code: string): Promise<APIResponse<{ client_id: number }>> {
+    return this.request(API_ENDPOINTS.validateRecoveryCode, {
+      method: 'POST',
+      body: JSON.stringify({ recovery_code: code }),
+    });
+  }
+
+  async getRecoveryStatus(clientId: number): Promise<APIResponse<{
+    has_recovery_code: boolean;
+    expires_at: string | null;
+    last_recovered_at: string | null;
+  }>> {
+    return this.request(API_ENDPOINTS.recoveryStatus(clientId));
+  }
 }
 
 export const apiService = new ApiService();
