@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useApp } from '../contexts/AppContext';
-import { apiService } from '../services/api';
+import { useApp } from '../../contexts/AppContext';
+import { apiService } from '../../services/api';
 import { Copy, RefreshCw, X, Check } from 'lucide-react';
 
 interface RecoveryCodeModalProps {
