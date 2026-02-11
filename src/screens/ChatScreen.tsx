@@ -101,7 +101,10 @@ export function ChatScreen() {
           name: response.data.new_counselor.name,
           description: response.data.new_counselor.who_you_are,
           specialty: response.data.new_counselor.your_vibe,
-          visuals: response.data.new_counselor.visuals,
+          visuals: {
+            ...counselor?.visuals,
+            ...response.data.new_counselor.visuals,
+          } as Counselor['visuals'],
         };
         setCounselor(newCounselor);
         showToast({ message: `✨ ${response.data.new_counselor.name} has joined the conversation!`, type: 'success' });
@@ -132,7 +135,10 @@ export function ChatScreen() {
   // Build backdrop styles
   const getBackdropStyle = (includePattern: boolean = false): React.CSSProperties => {
     const baseStyle: React.CSSProperties = {
-      background: backdrop?.gradient || counselorColor,
+      backgroundImage: backdrop?.gradient || counselorColor,
+      backgroundSize: 'cover',
+      backgroundRepeat: 'no-repeat',
+      backgroundPosition: 'center',
     };
 
     if (includePattern && backdrop?.type === 'pattern' && backdrop.pattern) {
@@ -146,16 +152,20 @@ export function ChatScreen() {
   console.log('ChatScreen rendering counselor visuals:', counselor?.visuals);
 
   return (
-    <div 
-      className="h-screen flex flex-col fade-in" 
+    <div
+      className="h-screen flex flex-col fade-in"
       style={getBackdropStyle(true)}
+    >
       {/* Header - Taller */}
       <header
         className="flex items-center justify-between px-4 py-5 border-b-2 border-gba-border flex-shrink-0"
-        style={{ 
-          background: backdrop?.type === 'pattern' && backdrop.pattern
+        style={{
+          backgroundImage: backdrop?.type === 'pattern' && backdrop.pattern
             ? `${backdrop.gradient}, var(--pattern-${backdrop.pattern})`
             : (backdrop?.gradient || counselorColor),
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
           backgroundBlendMode: backdrop?.type === 'pattern' ? 'overlay' : undefined,
           color: counselorTextColor
         }}
@@ -185,8 +195,11 @@ export function ChatScreen() {
       {/* Chat Area - Clean themed color only, no pattern */}
       <main
         className="flex-1 flex flex-col p-4 overflow-y-auto"
-        style={{ 
-          background: backdrop?.gradient || counselorColor
+        style={{
+          backgroundImage: backdrop?.gradient || counselorColor,
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center'
         }}
       >
         {messages.length === 0 && (
@@ -237,10 +250,13 @@ export function ChatScreen() {
       {/* Input Area */}
       <footer
         className="p-4 border-t-2 border-gba-border flex-shrink-0"
-        style={{ 
-          background: backdrop?.type === 'pattern' && backdrop.pattern
+        style={{
+          backgroundImage: backdrop?.type === 'pattern' && backdrop.pattern
             ? `${backdrop.gradient}, var(--pattern-${backdrop.pattern})`
             : (backdrop?.gradient || counselorColor),
+          backgroundSize: 'cover',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
           backgroundBlendMode: backdrop?.type === 'pattern' ? 'overlay' : undefined,
           opacity: 0.95
         }}
