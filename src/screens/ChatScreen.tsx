@@ -131,6 +131,7 @@ export function ChatScreen() {
   const counselorColor = counselor?.visuals.selectionCard.backgroundColor || '#E8D0A0';
   const counselorTextColor = counselor?.visuals.textColor || '#483018';
   const backdrop = counselor?.visuals.chatBackdrop;
+  const chatTextColor = backdrop?.textColor || counselorTextColor;
 
   // Build backdrop styles
   const getBackdropStyle = (includePattern: boolean = false): React.CSSProperties => {
@@ -167,13 +168,13 @@ export function ChatScreen() {
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
           backgroundBlendMode: backdrop?.type === 'pattern' ? 'overlay' : undefined,
-          color: counselorTextColor
+          color: chatTextColor
         }}
       >
         <button
           onClick={handleBack}
           className="flex items-center gap-2 hover:underline min-h-[44px] min-w-[44px]"
-          style={{ color: counselorTextColor }}
+          style={{ color: chatTextColor }}
           aria-label="Back"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -184,7 +185,7 @@ export function ChatScreen() {
         >
           <h1
             className="font-retro text-2xl underline cursor-pointer"
-            style={{ color: counselorTextColor }}
+            style={{ color: chatTextColor }}
           >
             {counselor?.name}
           </h1>
@@ -204,9 +205,9 @@ export function ChatScreen() {
       >
         {messages.length === 0 && (
           <div className="flex-1 flex items-center justify-center text-center">
-            <p 
+            <p
               className="font-sans opacity-75"
-              style={{ color: counselorTextColor }}
+              style={{ color: chatTextColor }}
             >
               Start a conversation with {counselor?.name}
             </p>
@@ -269,7 +270,7 @@ export function ChatScreen() {
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Type your message..."
             className="input-bubble flex-1 px-4 py-3 font-sans bg-white min-h-[44px]"
-            style={{ color: counselorTextColor }}
+            style={{ color: chatTextColor }}
             disabled={isLoading || !sessionId}
           />
           <button
@@ -285,9 +286,9 @@ export function ChatScreen() {
           </button>
         </div>
         {!sessionId && (
-          <p 
+          <p
             className="mt-2 text-xs font-sans opacity-50 text-center"
-            style={{ color: counselorTextColor }}
+            style={{ color: chatTextColor }}
           >
             Connecting to session...
           </p>

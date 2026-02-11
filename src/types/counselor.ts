@@ -4,6 +4,7 @@ export interface ChatBackdrop {
   pattern?: string;
   patternOpacity?: number;
   overlayColor?: string;
+  textColor?: string;
 }
 
 export interface Counselor {
@@ -83,6 +84,7 @@ export type CounselorFromDB = {
           pattern?: string;
           patternOpacity?: number;
           overlayColor?: string;
+          textColor?: string;
         };
         icon?: string;
       };
