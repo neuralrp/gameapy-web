@@ -95,7 +95,7 @@ export function CounselorSelection() {
                   ${imageUrl ? 'counselor-image' : ''}
                 `}
                 style={{
-                  backgroundImage: imageUrl ? `url(${imageUrl})` : undefined,
+                  backgroundImage: imageUrl ? `url(${encodeURI(imageUrl)})` : undefined,
                   backgroundColor: !imageUrl ? bgColor : undefined,
                   backgroundPosition: 'center',
                   backgroundRepeat: 'no-repeat'
