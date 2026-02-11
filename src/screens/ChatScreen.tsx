@@ -127,15 +127,38 @@ export function ChatScreen() {
 
   const counselorColor = counselor?.visuals.selectionCard.backgroundColor || '#E8D0A0';
   const counselorTextColor = counselor?.visuals.textColor || '#483018';
+  const backdrop = counselor?.visuals.chatBackdrop;
+
+  // Build backdrop styles
+  const getBackdropStyle = (includePattern: boolean = false): React.CSSProperties => {
+    const baseStyle: React.CSSProperties = {
+      background: backdrop?.gradient || counselorColor,
+    };
+
+    if (includePattern && backdrop?.type === 'pattern' && backdrop.pattern) {
+      baseStyle.backgroundImage = `${backdrop.gradient}, var(--pattern-${backdrop.pattern})`;
+      baseStyle.backgroundBlendMode = 'overlay';
+    }
+
+    return baseStyle;
+  };
 
   console.log('ChatScreen rendering counselor visuals:', counselor?.visuals);
 
   return (
-    <div className="h-screen flex flex-col fade-in" style={{ backgroundColor: `${counselorColor} !important` }}>
+    <div 
+      className="h-screen flex flex-col fade-in" 
+      style={getBackdropStyle(true)}
       {/* Header - Taller */}
       <header
         className="flex items-center justify-between px-4 py-5 border-b-2 border-gba-border flex-shrink-0"
-        style={{ backgroundColor: `${counselorColor} !important`, color: `${counselorTextColor} !important` }}
+        style={{ 
+          background: backdrop?.type === 'pattern' && backdrop.pattern
+            ? `${backdrop.gradient}, var(--pattern-${backdrop.pattern})`
+            : (backdrop?.gradient || counselorColor),
+          backgroundBlendMode: backdrop?.type === 'pattern' ? 'overlay' : undefined,
+          color: counselorTextColor
+        }}
       >
         <button
           onClick={handleBack}
@@ -159,10 +182,12 @@ export function ChatScreen() {
         <HealthStatusIcon onClick={() => setShowHealthModal(true)} />
       </header>
 
-      {/* Chat Area */}
+      {/* Chat Area - Clean themed color only, no pattern */}
       <main
         className="flex-1 flex flex-col p-4 overflow-y-auto"
-        style={{ backgroundColor: `${counselorColor} !important` }}
+        style={{ 
+          background: backdrop?.gradient || counselorColor
+        }}
       >
         {messages.length === 0 && (
           <div className="flex-1 flex items-center justify-center text-center">
@@ -212,7 +237,13 @@ export function ChatScreen() {
       {/* Input Area */}
       <footer
         className="p-4 border-t-2 border-gba-border flex-shrink-0"
-        style={{ backgroundColor: `${counselorColor}99 !important` }}
+        style={{ 
+          background: backdrop?.type === 'pattern' && backdrop.pattern
+            ? `${backdrop.gradient}, var(--pattern-${backdrop.pattern})`
+            : (backdrop?.gradient || counselorColor),
+          backgroundBlendMode: backdrop?.type === 'pattern' ? 'overlay' : undefined,
+          opacity: 0.95
+        }}
       >
         <div className="flex gap-3 items-end">
           <input

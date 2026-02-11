@@ -486,3 +486,34 @@ body {
   background-color: #D1FAE5;
   color: #065F46;
 }
+
+/* Counselor Chat Backdrop Patterns */
+:root {
+  /* Wave pattern for Marina (ocean theme) */
+  --pattern-waves: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 320'%3E%3Cpath fill='%23ffffff' fill-opacity='0.3' d='M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,250.7C672,235,768,181,864,181.3C960,181,1056,235,1152,234.7C1248,235,1344,181,1392,154.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z'%3E%3C/path%3E%3C/svg%3E");
+  
+  /* Leaf pattern for Deirdre (jungle theme) */
+  --pattern-leaves: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 5 Q40 20 30 35 Q20 20 30 5' fill='%23ffffff' fill-opacity='0.25'/%3E%3Cpath d='M10 30 Q25 40 10 50 Q25 40 10 30' fill='%23ffffff' fill-opacity='0.2'/%3E%3Cpath d='M50 25 Q35 35 50 45 Q35 35 50 25' fill='%23ffffff' fill-opacity='0.2'/%3E%3C/svg%3E");
+  
+  /* Grass pattern for Father Red Oak (field theme) */
+  --pattern-grass: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M10 40 Q12 25 10 20 Q8 25 6 40 M20 40 Q22 28 20 22 Q18 28 16 40 M30 40 Q32 25 30 20 Q28 25 26 40' stroke='%23ffffff' stroke-opacity='0.2' fill='none' stroke-width='1.5'/%3E%3C/svg%3E");
+  
+  /* Stripe pattern for Coach San Mateo (gym theme) */
+  --pattern-stripes: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cpath d='M0 10 L40 0 M0 30 L40 20' stroke='%23ffffff' stroke-opacity='0.15' stroke-width='2'/%3E%3C/svg%3E");
+}
+
+/* Backdrop container styles */
+.backdrop-container {
+  position: relative;
+}
+
+.backdrop-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+}

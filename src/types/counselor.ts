@@ -1,3 +1,11 @@
+export interface ChatBackdrop {
+  type: 'gradient' | 'pattern';
+  gradient: string;
+  pattern?: string;
+  patternOpacity?: number;
+  overlayColor?: string;
+}
+
 export interface Counselor {
   id: number;
   name: string;
@@ -23,6 +31,7 @@ export interface Counselor {
       textColor: string;
       image?: string;
     };
+    chatBackdrop: ChatBackdrop;
     icon?: string;
   };
 }
@@ -67,6 +76,13 @@ export type CounselorFromDB = {
           borderColor: string;
           textColor: string;
           image?: string;
+        };
+        chatBackdrop: {
+          type: 'gradient' | 'pattern';
+          gradient: string;
+          pattern?: string;
+          patternOpacity?: number;
+          overlayColor?: string;
         };
         icon?: string;
       };
