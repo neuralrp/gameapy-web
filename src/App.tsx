@@ -2,7 +2,6 @@ import { Routes, Route } from 'react-router-dom';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { CounselorSelection } from './screens/CounselorSelection';
 import { ChatScreen } from './screens/ChatScreen';
-import { GuideScreen } from './screens/GuideScreen';
 import { CardInventoryModal } from './screens/CardInventoryModal';
 import { RecoveryScreen } from './screens/RecoveryScreen';
 import { RecoveryCodeModal } from './components/shared/RecoveryCodeModal';
@@ -15,7 +14,6 @@ function AppContent() {
     setShowInventory, 
     showInventoryFullScreen, 
     setShowInventoryFullScreen, 
-    showGuide, 
     toast,
     recoveryCode,
     setRecoveryCode,
@@ -33,8 +31,6 @@ function AppContent() {
               isFullScreen={true}
               onClose={() => setShowInventoryFullScreen(false)}
             />
-          ) : showGuide ? (
-            <GuideScreen />
           ) : counselor ? (
             <ChatScreen />
           ) : (

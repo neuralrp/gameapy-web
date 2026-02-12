@@ -13,11 +13,6 @@ export const API_ENDPOINTS = {
   pinCard: (type: string, id: number) => `/api/v1/cards/${type}/${id}/pin`,
   unpinCard: (type: string, id: number) => `/api/v1/cards/${type}/${id}/unpin`,
   clientCards: (clientId: number) => `/api/v1/clients/${clientId}/cards`,
-  guide: {
-    start: '/api/v1/guide/conversation/start',
-    input: '/api/v1/guide/conversation/input',
-    confirmCard: '/api/v1/guide/conversation/confirm-card',
-  },
   analyzeSession: (sessionId: number) => `/api/v1/sessions/${sessionId}/analyze`,
   health: '/health',
   generateRecoveryCode: (clientId: number) => `/api/v1/recovery/generate?client_id=${clientId}`,

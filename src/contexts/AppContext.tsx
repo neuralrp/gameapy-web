@@ -22,12 +22,6 @@ interface AppContextType {
   showInventoryFullScreen: boolean;
   setShowInventoryFullScreen: (show: boolean) => void;
   initializeClient: () => Promise<void>;
-  showGuide: boolean;
-  setShowGuide: (show: boolean) => void;
-  guideSessionId: number | null;
-  setGuideSessionId: (id: number | null) => void;
-  startGuide: () => Promise<void>;
-  endGuide: () => void;
   sessionMessageCount: number;
   incrementSessionMessageCount: () => void;
   resetSessionMessageCount: () => void;
@@ -60,8 +54,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [counselor, setCounselor] = useState<Counselor | null>(null);
   const [showInventory, setShowInventory] = useState(false);
   const [showInventoryFullScreen, setShowInventoryFullScreen] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
-  const [guideSessionId, setGuideSessionId] = useState<number | null>(null);
   const [sessionMessageCount, setSessionMessageCount] = useState(0);
   const [toast, setToast] = useState<Toast | null>(null);
   const [healthStatus, setHealthStatus] = useState<HealthCheck | null>(null);
@@ -163,27 +155,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const startGuide = async () => {
-    if (!clientId) {
-      console.error('Cannot start guide: No client ID');
-      return;
-    }
-
-    try {
-      const response = await apiService.startGuideConversation(clientId);
-      if (response.success && response.data) {
-        setGuideSessionId(response.data.session_id);
-        setShowGuide(true);
-      }
-    } catch (error) {
-      console.error('Failed to start guide:', error);
-    }
-  };
-
-  const endGuide = () => {
-    setShowGuide(false);
-    setGuideSessionId(null);
-  };
 
   const incrementSessionMessageCount = () => {
     setSessionMessageCount(prev => prev + 1);
@@ -261,12 +232,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         showInventoryFullScreen,
         setShowInventoryFullScreen,
         initializeClient,
-        showGuide,
-        setShowGuide,
-        guideSessionId,
-        setGuideSessionId,
-        startGuide,
-        endGuide,
         sessionMessageCount,
         incrementSessionMessageCount,
         resetSessionMessageCount,
