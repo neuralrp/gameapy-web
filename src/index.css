@@ -9,7 +9,7 @@
   --color-gba-ui: #F8F0D8;
   --color-gba-card: #D8C8A8;
 
-  --font-retro: "VT323", monospace;
+  --font-retro: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 

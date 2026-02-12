@@ -56,6 +56,9 @@ export function CounselorSelection() {
     return counselor.visuals.selectionCard.backgroundColor;
   };
 
+  const truncateName = (name: string, maxLen: number = 15) =>
+    name.length > maxLen ? name.slice(0, maxLen) + '…' : name;
+
   if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
@@ -84,8 +87,12 @@ export function CounselorSelection() {
 
   return (
     <div className="h-screen relative">
-      <div className="h-full overflow-y-auto p-4 pt-20 pb-20">
-        <div className="grid grid-cols-2 gap-4 max-w-4xl mx-auto">
+      <div className="h-full overflow-y-auto p-4 pt-20 pb-8">
+        <div className="text-center mb-6 mt-4">
+          <h1 className="text-3xl font-bold text-gba-text mb-1">Gameapy</h1>
+          <p className="text-sm text-gba-text/70">AI that grows with you</p>
+        </div>
+        <div className="grid grid-cols-3 gap-3 max-w-2xl mx-auto">
           {counselors.map((counselor) => {
             const imageUrl = counselor.visuals.selectionCard.image;
             const bgColor = getCounselorColor(counselor);
@@ -95,7 +102,7 @@ export function CounselorSelection() {
                 key={counselor.id}
                 onClick={() => handleSelect(counselor)}
                 className={`
-                  aspect-square transition-all duration-200
+                  relative aspect-square transition-all duration-200
                   ${selectedCounselor?.id === counselor.id ? 'selected' : ''}
                   ${imageUrl ? 'counselor-image' : ''}
                   rounded-lg border-2 border-gba-border
@@ -110,13 +117,11 @@ export function CounselorSelection() {
                 }}
                 aria-label={`Select ${counselor.name}`}
               >
-                {!imageUrl && (
-                  <div className="h-full flex items-center justify-center p-4">
-                    <span className="text-gba-text font-bold text-center">
-                      {counselor.name}
-                    </span>
-                  </div>
-                )}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 rounded-b-md">
+                  <span className="text-white font-bold text-xs drop-shadow-md">
+                    {truncateName(counselor.name)}
+                  </span>
+                </div>
               </button>
             );
           })}
