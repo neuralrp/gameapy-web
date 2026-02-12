@@ -13,7 +13,10 @@ interface Toast {
 interface AppContextType {
   clientId: number | null;
   setClientId: (id: number | null) => void;
-  clientLoading: boolean;
+  authToken: string | null;
+  setAuthToken: (token: string | null) => void;
+  isAuthenticated: boolean;
+  authLoading: boolean;
   sessionId: number | null;
   counselor: Counselor | null;
   setCounselor: (counselor: Counselor | null) => void;
@@ -21,7 +24,6 @@ interface AppContextType {
   setShowInventory: (show: boolean) => void;
   showInventoryFullScreen: boolean;
   setShowInventoryFullScreen: (show: boolean) => void;
-  initializeClient: () => Promise<void>;
   sessionMessageCount: number;
   incrementSessionMessageCount: () => void;
   resetSessionMessageCount: () => void;
@@ -38,18 +40,16 @@ interface AppContextType {
   startHealthChecks: () => void;
   stopHealthChecks: () => void;
   checkHealthNow: () => Promise<void>;
-  // Recovery code
-  recoveryCode: string | null;
-  setRecoveryCode: (code: string | null) => void;
-  showRecoveryCodeModal: boolean;
-  setShowRecoveryCodeModal: (show: boolean) => void;
+  logout: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [clientId, setClientId] = useState<number | null>(null);
-  const [clientLoading, setClientLoading] = useState(true);
+  const [authToken, setAuthTokenState] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [counselor, setCounselor] = useState<Counselor | null>(null);
   const [showInventory, setShowInventory] = useState(false);
@@ -63,9 +63,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [consecutiveHealthFailures, setConsecutiveHealthFailures] = useState(0);
   const [showHealthModal, setShowHealthModal] = useState(false);
   const healthIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Recovery code state
-  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
-  const [showRecoveryCodeModal, setShowRecoveryCodeModal] = useState(false);
 
   const calculateNextRetryDelay = () => {
     if (consecutiveHealthFailures === 0) {
@@ -84,53 +81,61 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    initializeClient();
+    initializeAuth();
   }, []);
 
-  const initializeClient = async () => {
-    const storedId = localStorage.getItem('gameapy_client_id_int');
+  const initializeAuth = async () => {
+    const token = localStorage.getItem('gameapy_auth_token');
+    const storedClientId = localStorage.getItem('gameapy_client_id_int');
 
-    if (storedId) {
-      setClientId(parseInt(storedId));
-      setClientLoading(false);
+    if (!token) {
+      setIsAuthenticated(false);
+      setAuthLoading(false);
       return;
     }
 
     try {
-      const response = await apiService.createClient({
-        name: 'Gameapy User',
-        personality: 'New user',
-        traits: [],
-        goals: [],
-        presenting_issues: [],
-        life_events: [],
-      }) as APIResponse<{ client_id: number; recovery_code: string }>;
-
-      if (response.success && response.data?.client_id) {
-        const newClientId = response.data.client_id;
-        localStorage.setItem('gameapy_client_id_int', newClientId.toString());
-        localStorage.setItem('gameapy_session_id', '');
-        setClientId(newClientId);
-        
-        // Store recovery code and show modal for new clients
-        if (response.data.recovery_code) {
-          setRecoveryCode(response.data.recovery_code);
-          setShowRecoveryCodeModal(true);
-        }
+      apiService.setAuthToken(token);
+      
+      const storedSessionId = localStorage.getItem('gameapy_session_id');
+      if (storedSessionId) {
+        setSessionId(parseInt(storedSessionId));
       }
+      
+      if (storedClientId) {
+        setClientId(parseInt(storedClientId));
+      }
+      
+      setAuthTokenState(token);
+      setIsAuthenticated(true);
     } catch (error) {
-      console.error('Failed to create client:', error);
+      localStorage.removeItem('gameapy_auth_token');
+      localStorage.removeItem('gameapy_client_id_int');
+      setIsAuthenticated(false);
     } finally {
-      setClientLoading(false);
+      setAuthLoading(false);
     }
   };
 
-  const createSessionForCounselor = async (counselorId: number) => {
-    if (!clientId) return;
+  const setAuthToken = (token: string | null) => {
+    setAuthTokenState(token);
+    apiService.setAuthToken(token);
+    setIsAuthenticated(!!token);
+  };
 
+  const logout = () => {
+    setAuthToken(null);
+    setClientId(null);
+    setCounselor(null);
+    setSessionId(null);
+    localStorage.removeItem('gameapy_auth_token');
+    localStorage.removeItem('gameapy_client_id_int');
+    localStorage.removeItem('gameapy_session_id');
+  };
+
+  const createSessionForCounselor = async (counselorId: number) => {
     try {
       const response = await apiService.createSession({
-        client_id: clientId,
         counselor_id: counselorId,
       }) as APIResponse<{ session_id: number }>;
 
@@ -147,14 +152,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const handleSetCounselor = async (newCounselor: Counselor | null) => {
     setCounselor(newCounselor);
 
-    if (newCounselor && clientId) {
+    if (newCounselor) {
       await createSessionForCounselor(newCounselor.id);
     } else {
       setSessionId(null);
       localStorage.setItem('gameapy_session_id', '');
     }
   };
-
 
   const incrementSessionMessageCount = () => {
     setSessionMessageCount(prev => prev + 1);
@@ -223,7 +227,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       value={{
         clientId,
         setClientId,
-        clientLoading,
+        authToken,
+        setAuthToken,
+        isAuthenticated,
+        authLoading,
         sessionId,
         counselor,
         setCounselor: handleSetCounselor,
@@ -231,7 +238,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setShowInventory,
         showInventoryFullScreen,
         setShowInventoryFullScreen,
-        initializeClient,
         sessionMessageCount,
         incrementSessionMessageCount,
         resetSessionMessageCount,
@@ -248,11 +254,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         startHealthChecks,
         stopHealthChecks,
         checkHealthNow,
-        // Recovery code
-        recoveryCode,
-        setRecoveryCode,
-        showRecoveryCodeModal,
-        setShowRecoveryCodeModal,
+        logout,
       }}
     >
       {children}

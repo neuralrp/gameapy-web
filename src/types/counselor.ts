@@ -12,6 +12,7 @@ export interface Counselor {
   name: string;
   description: string;
   specialty: string;
+  is_custom?: boolean;
   visuals: {
     primaryColor: string;
     secondaryColor: string;
@@ -40,9 +41,10 @@ export interface Counselor {
 export type CounselorFromDB = {
   id: number;
   name: string;
-  specialization: string;  // now stores 'who_you_are'
-  therapeutic_style: string;  // now stores 'your_vibe'
-  credentials: string;  // now stores 'your_worldview'
+  specialization: string;
+  therapeutic_style: string;
+  credentials: string;
+  is_custom?: boolean;
   profile: {
     spec: string;
     spec_version: string;
@@ -101,3 +103,27 @@ export type CounselorFromDB = {
   created_at: string;
   updated_at: string;
 };
+
+export interface CreateAdvisorRequest {
+  client_id: number;
+  name: string;
+  specialty: string;
+  vibe: string;
+}
+
+export interface CreateAdvisorResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    counselor_id: number;
+    persona: CounselorFromDB['profile'];
+  };
+}
+
+export interface CustomAdvisor {
+  id: number;
+  name: string;
+  specialty: string;
+  description: string;
+  created_at: string;
+}

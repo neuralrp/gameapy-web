@@ -46,7 +46,6 @@ export interface ClientProfileResponse {
 }
 
 export interface SessionCreate {
-  client_id: number;
   counselor_id: number;
 }
 
@@ -141,7 +140,6 @@ export interface CardGenerateResponse {
 }
 
 export interface CardSaveRequest {
-  client_id: number;
   card_type: 'self' | 'character' | 'world';
   card_data: Record<string, any>;
 }

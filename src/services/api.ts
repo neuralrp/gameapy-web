@@ -1,8 +1,6 @@
 import { API_BASE_URL, API_ENDPOINTS } from '../utils/constants';
 import type {
   ChatRequest,
-  ChatResponse,
-  ClientProfileCreate,
   SessionCreate,
   APIResponse,
   SessionAnalyzeResponse,
@@ -49,9 +47,20 @@ function transformCounselorFromDB(dbCounselor: CounselorFromDB): Counselor {
 
 export class ApiService {
   private baseUrl: string;
+  private authToken: string | null = null;
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
+    this.authToken = localStorage.getItem('gameapy_auth_token');
+  }
+
+  setAuthToken(token: string | null) {
+    this.authToken = token;
+    if (token) {
+      localStorage.setItem('gameapy_auth_token', token);
+    } else {
+      localStorage.removeItem('gameapy_auth_token');
+    }
   }
 
   private async request<T>(
@@ -61,16 +70,29 @@ export class ApiService {
     const url = `${this.baseUrl}${endpoint}`;
     const timestamp = new Date().toISOString();
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...options.headers as Record<string, string>,
+    };
+
+    if (this.authToken) {
+      headers['Authorization'] = `Bearer ${this.authToken}`;
+    }
+
     try {
       console.log(`[${timestamp}] API Request: ${options.method || 'GET'} ${url}`);
 
       const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
+        headers,
         ...options,
       });
+
+      if (response.status === 401) {
+        this.setAuthToken(null);
+        localStorage.removeItem('gameapy_client_id_int');
+        window.location.href = '/login';
+        throw new Error('Session expired. Please login again.');
+      }
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({
@@ -84,7 +106,7 @@ export class ApiService {
           error,
         });
 
-        throw new Error(error.message || `HTTP ${response.status}`);
+        throw new Error(error.detail || error.message || `HTTP ${response.status}`);
       }
 
       const data = await response.json();
@@ -106,11 +128,22 @@ export class ApiService {
     }
   }
 
-  async createClient(data: ClientProfileCreate) {
-    return this.request(API_ENDPOINTS.clients, {
+  async login(username: string, password: string): Promise<APIResponse<{ access_token: string; user_id: number; username: string }>> {
+    return this.request('/api/v1/auth/login', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ username, password }),
     });
+  }
+
+  async register(username: string, password: string, name: string): Promise<APIResponse<{ access_token: string; user_id: number; username: string }>> {
+    return this.request('/api/v1/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ username, password, name }),
+    });
+  }
+
+  async getMe(): Promise<APIResponse<{ user_id: number; username: string; name: string }>> {
+    return this.request('/api/v1/auth/me');
   }
 
   async getCounselors(): Promise<Counselor[]> {
@@ -118,16 +151,70 @@ export class ApiService {
     return dbCounselors.map(transformCounselorFromDB);
   }
 
+  async createCustomAdvisor(
+    name: string,
+    specialty: string,
+    vibe: string
+  ): Promise<import('../types/counselor').CreateAdvisorResponse> {
+    return this.request<import('../types/counselor').CreateAdvisorResponse>(
+      '/api/v1/counselors/custom/create',
+      {
+        method: 'POST',
+        body: JSON.stringify({ name, specialty, vibe })
+      }
+    );
+  }
+
+  async getCustomAdvisors(): Promise<import('../types/counselor').CustomAdvisor[]> {
+    return this.request<import('../types/counselor').CustomAdvisor[]>(
+      '/api/v1/counselors/custom/list'
+    );
+  }
+
+  async updateCustomAdvisor(
+    counselorId: number,
+    personaData: CounselorFromDB['profile']
+  ): Promise<APIResponse<void>> {
+    return this.request<APIResponse<void>>(
+      '/api/v1/counselors/custom/update',
+      {
+        method: 'PUT',
+        body: JSON.stringify({
+          counselor_id: counselorId,
+          persona_data: personaData
+        })
+      }
+    );
+  }
+
+  async deleteCustomAdvisor(counselorId: number): Promise<APIResponse<void>> {
+    return this.request<APIResponse<void>>(
+      `/api/v1/counselors/custom/${counselorId}`,
+      { method: 'DELETE' }
+    );
+  }
+
   async createSession(data: SessionCreate) {
     return this.request(API_ENDPOINTS.sessions, {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({ counselor_id: data.counselor_id }),
     });
   }
 
-  async sendMessage(data: ChatRequest): Promise<ChatResponse> {
-    return this.request(API_ENDPOINTS.chat, {
+  async sendMessage(data: ChatRequest): Promise<Response> {
+    const url = `${this.baseUrl}${API_ENDPOINTS.chat}`;
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.authToken) {
+      headers['Authorization'] = `Bearer ${this.authToken}`;
+    }
+
+    return fetch(url, {
       method: 'POST',
+      headers,
       body: JSON.stringify(data),
     });
   }
@@ -136,16 +223,29 @@ export class ApiService {
     const url = `${this.baseUrl}${API_ENDPOINTS.chat}`;
     const timestamp = new Date().toISOString();
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (this.authToken) {
+      headers['Authorization'] = `Bearer ${this.authToken}`;
+    }
+
     try {
       console.log(`[${timestamp}] API Stream Request: POST ${url}`);
 
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(data),
       });
+
+      if (response.status === 401) {
+        this.setAuthToken(null);
+        localStorage.removeItem('gameapy_client_id_int');
+        window.location.href = '/login';
+        throw new Error('Session expired. Please login again.');
+      }
 
       if (!response.ok) {
         const error = await response.json().catch(() => ({
@@ -214,8 +314,8 @@ export class ApiService {
     }
   }
 
-  async getCards(clientId: number): Promise<APIResponse<{ items: Card[] }>> {
-    return this.request(API_ENDPOINTS.clientCards(clientId));
+  async getCards(): Promise<APIResponse<{ items: Card[] }>> {
+    return this.request(API_ENDPOINTS.clientCards);
   }
 
   async updateCard(type: string, id: number, data: Record<string, any>): Promise<any> {
@@ -266,12 +366,10 @@ export class ApiService {
   }
 
   async saveCard(
-    clientId: number,
     cardType: 'self' | 'character' | 'world',
     cardData: Record<string, any>
   ): Promise<APIResponse<{ card_id: number }>> {
     const payload: CardSaveRequest = {
-      client_id: clientId,
       card_type: cardType,
       card_data: cardData,
     };
@@ -283,28 +381,6 @@ export class ApiService {
 
   async checkHealth(): Promise<HealthCheck> {
     return this.request<HealthCheck>(API_ENDPOINTS.health);
-  }
-
-  // Recovery Code API
-  async generateRecoveryCode(clientId: number): Promise<APIResponse<{ recovery_code: string }>> {
-    return this.request(API_ENDPOINTS.generateRecoveryCode(clientId), {
-      method: 'POST',
-    });
-  }
-
-  async validateRecoveryCode(code: string): Promise<APIResponse<{ client_id: number }>> {
-    return this.request(API_ENDPOINTS.validateRecoveryCode, {
-      method: 'POST',
-      body: JSON.stringify({ recovery_code: code }),
-    });
-  }
-
-  async getRecoveryStatus(clientId: number): Promise<APIResponse<{
-    has_recovery_code: boolean;
-    expires_at: string | null;
-    last_recovered_at: string | null;
-  }>> {
-    return this.request(API_ENDPOINTS.recoveryStatus(clientId));
   }
 }
 

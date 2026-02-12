@@ -314,7 +314,7 @@ export function ChatScreen() {
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Type your message..."
             className="input-bubble flex-1 px-4 py-3 font-sans bg-white min-h-[44px]"
-            style={{ color: chatTextColor }}
+            style={{ color: '#000000' }}
             disabled={isLoading || !sessionId}
           />
           <button

@@ -5,9 +5,10 @@ import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
 import { useDebounce } from '../hooks/useDebounce';
 import type { Card, CardType } from '../types/card';
-import { ArrowLeft, Search, ChevronRight, Settings, Plus } from 'lucide-react';
+import type { CustomAdvisor } from '../types/counselor';
+import { ArrowLeft, Search, ChevronRight, Settings, Plus, Trash2 } from 'lucide-react';
 
-type TabType = 'self' | 'character' | 'world';
+type TabType = 'self' | 'character' | 'world' | 'advisor';
 
 function formatTimestamp(timestamp: string): string {
   const date = new Date(timestamp);
@@ -51,7 +52,7 @@ function getCardFields(card: Card): Array<{ label: string; value: string; key: s
 }
 
 export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose: () => void; isFullScreen?: boolean }) {
-  const { clientId, showToast, counselor } = useApp();
+  const { showToast, counselor } = useApp();
   const [activeTab, setActiveTab] = useState<TabType>('self');
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,22 +71,30 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
   const [createError, setCreateError] = useState<string | null>(null);
   const [createForm, setCreateForm] = useState<Record<string, string>>({});
 
+  const [advisors, setAdvisors] = useState<CustomAdvisor[]>([]);
+  const [advisorsLoading, setAdvisorsLoading] = useState(false);
+  const [deletingAdvisorId, setDeletingAdvisorId] = useState<number | null>(null);
+
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const counselorColor = counselor?.visuals.selectionCard.backgroundColor || '#78C0D8';
 
   useEffect(() => {
     loadCards();
-  }, [clientId]);
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'advisor') {
+      loadAdvisors();
+    }
+  }, [activeTab]);
 
   const loadCards = async () => {
-    if (!clientId) return;
-
     setLoading(true);
     setError(null);
 
     try {
-      const response = await apiService.getCards(clientId);
+      const response = await apiService.getCards();
       if (response.success && response.data?.items) {
         setCards(response.data.items);
       } else {
@@ -95,6 +104,18 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
       setError(err instanceof Error ? err.message : 'Failed to load cards');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAdvisors = async () => {
+    setAdvisorsLoading(true);
+    try {
+      const advisorList = await apiService.getCustomAdvisors();
+      setAdvisors(advisorList);
+    } catch (err) {
+      console.error('Failed to load advisors:', err);
+    } finally {
+      setAdvisorsLoading(false);
     }
   };
 
@@ -259,8 +280,6 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
   };
 
   const handleCreateCard = async () => {
-    if (!clientId) return;
-
     const errors = validateForm(createCardType, createForm);
     if (errors.length > 0) {
       setCreateError(errors.join(', '));
@@ -272,7 +291,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
 
     try {
       const cardData = { ...createForm, auto_update_enabled: true, is_pinned: false };
-      const response = await apiService.saveCard(clientId, createCardType, cardData);
+      const response = await apiService.saveCard(createCardType, cardData);
 
       if (response.success) {
         showToast({
@@ -298,6 +317,30 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     setIsCreating(false);
     setCreateForm({});
     setCreateError(null);
+  };
+
+  const handleDeleteAdvisor = async (advisorId: number, advisorName: string) => {
+    if (!confirm(`Are you sure you want to delete "${advisorName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeletingAdvisorId(advisorId);
+
+    try {
+      const response = await apiService.deleteCustomAdvisor(advisorId);
+
+      if (response.success) {
+        showToast({ message: 'Advisor deleted successfully', type: 'success' });
+        await loadAdvisors();
+      } else {
+        showToast({ message: response.message || 'Failed to delete advisor', type: 'error' });
+      }
+    } catch (err) {
+      console.error('Failed to delete advisor:', err);
+      showToast({ message: 'Failed to delete advisor', type: 'error' });
+    } finally {
+      setDeletingAdvisorId(null);
+    }
   };
 
   const getInitialCreateForm = (cardType: CardType): Record<string, string> => {
@@ -337,6 +380,17 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
       );
     });
 
+  const filteredAdvisors = advisors.filter((advisor) => {
+    if (!debouncedSearchQuery) return true;
+
+    const query = debouncedSearchQuery.toLowerCase();
+    return (
+      advisor.name.toLowerCase().includes(query) ||
+      advisor.specialty.toLowerCase().includes(query) ||
+      advisor.description.toLowerCase().includes(query)
+    );
+  });
+
   const getCardTitle = (card: Card): string => {
     if (card.card_type === 'world') return card.payload?.title || 'Untitled Event';
     if (card.card_type === 'character') return card.payload?.name || 'Unnamed Character';
@@ -355,9 +409,12 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
 
   const getEmptyStateMessage = (): string => {
     if (debouncedSearchQuery) {
-      return 'No cards match your search.';
+      return 'No results match your search.';
     }
     const tabName = activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
+    if (activeTab === 'advisor') {
+      return 'No custom advisors yet. Create one by tapping the + button on the counselor selection screen!';
+    }
     return `No ${tabName} cards yet. Start chatting to create cards!`;
   };
 
@@ -394,7 +451,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
         {!selectedCard && !isCreating && (
           <div className="px-5 pb-4 flex-shrink-0 bg-white border-b border-gray-100">
             <div className="segmented-control mb-4">
-              {(['self', 'character', 'world'] as TabType[]).map((tab) => (
+              {(['self', 'character', 'world', 'advisor'] as TabType[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -420,12 +477,16 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
         )}
 
         <div className="flex-1 overflow-y-auto p-5 bg-gray-50 relative">
-          {loading && !selectedCard && !isCreating ? (
+          {loading && !selectedCard && !isCreating && activeTab !== 'advisor' ? (
             <div className="flex justify-center items-center py-12">
               <LoadingSpinner size="lg" />
             </div>
-          ) : error && !selectedCard && !isCreating ? (
+          ) : error && !selectedCard && !isCreating && activeTab !== 'advisor' ? (
             <ErrorMessage message={error} onRetry={loadCards} />
+          ) : advisorsLoading && activeTab === 'advisor' ? (
+            <div className="flex justify-center items-center py-12">
+              <LoadingSpinner size="lg" />
+            </div>
           ) : isCreating ? (
             <CardCreateForm
               cardType={createCardType}
@@ -463,13 +524,13 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                 counselorColor={counselorColor}
               />
             )
-          ) : filteredCards.length === 0 ? (
+          ) : (activeTab === 'advisor' ? filteredAdvisors.length === 0 : filteredCards.length === 0) ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
                 <Settings className="w-8 h-8 text-gray-400" />
               </div>
               <p className="font-sans text-gray-600 text-base mb-6">{getEmptyStateMessage()}</p>
-              {!debouncedSearchQuery && (
+              {!debouncedSearchQuery && activeTab !== 'advisor' && (
                 <button
                   onClick={() => handleStartCreate(activeTab)}
                   className="pill-button pill-button-primary"
@@ -479,6 +540,43 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                   Create {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Card
                 </button>
               )}
+            </div>
+          ) : activeTab === 'advisor' ? (
+            <div className="space-y-3">
+              {filteredAdvisors.map((advisor) => (
+                <div
+                  key={advisor.id}
+                  className="card-item"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="badge badge-pinned" title="Custom Advisor">
+                          🤖 Custom Advisor
+                        </span>
+                        <h3 className="font-sans font-semibold text-base text-gray-900 truncate">
+                          {advisor.name}
+                        </h3>
+                      </div>
+                      <p className="font-sans text-sm text-gray-500 line-clamp-2">
+                        {advisor.description}
+                      </p>
+                      <p className="font-sans text-xs text-gray-400 mt-1">
+                        Created: {formatTimestamp(advisor.created_at)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteAdvisor(advisor.id, advisor.name)}
+                      disabled={deletingAdvisorId === advisor.id}
+                      className="min-h-[44px] min-w-[44px] p-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label={`Delete ${advisor.name}`}
+                      title="Delete advisor"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
             <div className="space-y-3">
@@ -516,7 +614,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
             </div>
           )}
 
-          {!selectedCard && !isCreating && filteredCards.length > 0 && (
+          {!selectedCard && !isCreating && activeTab !== 'advisor' && filteredCards.length > 0 && (
             <button
               onClick={() => handleStartCreate(activeTab)}
               className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-10"

@@ -1,10 +1,10 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { CounselorSelection } from './screens/CounselorSelection';
 import { ChatScreen } from './screens/ChatScreen';
 import { CardInventoryModal } from './screens/CardInventoryModal';
-import { RecoveryScreen } from './screens/RecoveryScreen';
-import { RecoveryCodeModal } from './components/shared/RecoveryCodeModal';
+import { AdvisorCreatorScreen } from './screens/AdvisorCreatorScreen';
+import { LoginScreen } from './screens/LoginScreen';
 import { Toast } from './components/shared/Toast';
 
 function AppContent() {
@@ -15,16 +15,32 @@ function AppContent() {
     showInventoryFullScreen, 
     setShowInventoryFullScreen, 
     toast,
-    recoveryCode,
-    setRecoveryCode,
-    showRecoveryCodeModal,
-    setShowRecoveryCodeModal
+    isAuthenticated,
+    authLoading
   } = useApp();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#E8D0A0]">
+        <div className="text-[#483018] font-retro text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginScreen />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
 
   return (
     <>
       <Routes>
-        <Route path="/recover" element={<RecoveryScreen />} />
+        <Route path="/login" element={<Navigate to="/" replace />} />
+        <Route path="/create-advisor" element={<AdvisorCreatorScreen />} />
         <Route path="/*" element={
           showInventoryFullScreen ? (
             <CardInventoryModal
@@ -39,17 +55,6 @@ function AppContent() {
         } />
       </Routes>
       {showInventory && <CardInventoryModal onClose={() => setShowInventory(false)} />}
-      {showRecoveryCodeModal && recoveryCode && (
-        <RecoveryCodeModal
-          recoveryCode={recoveryCode}
-          onClose={() => setShowRecoveryCodeModal(false)}
-          onRegenerate={() => {
-            // Regenerate will update the recoveryCode state via AppContext
-            setRecoveryCode(null);
-            setShowRecoveryCodeModal(false);
-          }}
-        />
-      )}
       {toast && (
         <Toast
           message={toast.message}
