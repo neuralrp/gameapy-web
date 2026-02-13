@@ -85,7 +85,7 @@ export class ApiService {
       const response = await fetch(url, {
         headers,
         ...options,
-        signal: AbortSignal.timeout(10000),
+        signal: AbortSignal.timeout(60000),
       });
 
       if (response.status === 401) {
@@ -382,6 +382,72 @@ export class ApiService {
 
   async checkHealth(): Promise<HealthCheck> {
     return this.request<HealthCheck>(API_ENDPOINTS.health);
+  }
+
+  // Farm Minigame Methods
+  async getFarmStatus() {
+    return this.request('/farm/status');
+  }
+
+  async plantCrop(cropType: string, plotIndex: number) {
+    return this.request('/farm/plant', {
+      method: 'POST',
+      body: JSON.stringify({ crop_type: cropType, plot_index: plotIndex }),
+    });
+  }
+
+  async harvestCrop(plotIndex: number) {
+    return this.request('/farm/harvest', {
+      method: 'POST',
+      body: JSON.stringify({ plot_index: plotIndex }),
+    });
+  }
+
+  async buyAnimal(animalType: string, slotIndex: number) {
+    return this.request('/farm/buy-animal', {
+      method: 'POST',
+      body: JSON.stringify({ animal_type: animalType, slot_index: slotIndex }),
+    });
+  }
+
+  async harvestAnimal(slotIndex: number) {
+    return this.request('/farm/harvest-animal', {
+      method: 'POST',
+      body: JSON.stringify({ slot_index: slotIndex }),
+    });
+  }
+
+  async addDecoration(decorationType: string, x: number, y: number, variant: number = 0) {
+    return this.request('/farm/add-decoration', {
+      method: 'POST',
+      body: JSON.stringify({ decoration_type: decorationType, x, y, variant }),
+    });
+  }
+
+  async upgradeFarm() {
+    return this.request('/farm/upgrade', {
+      method: 'POST',
+    });
+  }
+
+  async dailyLogin() {
+    return this.request('/game-state/daily-login', {
+      method: 'POST',
+    });
+  }
+
+  async getFarmShop() {
+    return this.request('/farm/shop-v2');
+  }
+
+  async incrementMessages() {
+    return this.request('/farm/increment-messages', {
+      method: 'POST',
+    });
+  }
+
+  async checkMarinaUnlock() {
+    return this.request('/farm/check-marina');
   }
 }
 

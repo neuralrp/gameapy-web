@@ -126,4 +126,5 @@ export interface CustomAdvisor {
   specialty: string;
   description: string;
   created_at: string;
+  profile?: CounselorFromDB['profile'];
 }

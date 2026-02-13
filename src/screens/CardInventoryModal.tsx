@@ -7,8 +7,9 @@ import { useDebounce } from '../hooks/useDebounce';
 import type { Card, CardType } from '../types/card';
 import type { CustomAdvisor } from '../types/counselor';
 import { ArrowLeft, Search, ChevronRight, Settings, Plus, Trash2 } from 'lucide-react';
+import { FarmTab } from '../components/farm/FarmTab';
 
-type TabType = 'self' | 'character' | 'world' | 'advisor';
+type TabType = 'self' | 'character' | 'world' | 'advisor' | 'farm';
 
 function formatTimestamp(timestamp: string): string {
   const date = new Date(timestamp);
@@ -74,6 +75,14 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
   const [advisors, setAdvisors] = useState<CustomAdvisor[]>([]);
   const [advisorsLoading, setAdvisorsLoading] = useState(false);
   const [deletingAdvisorId, setDeletingAdvisorId] = useState<number | null>(null);
+  const [selectedAdvisor, setSelectedAdvisor] = useState<CustomAdvisor | null>(null);
+  const [isEditingAdvisor, setIsEditingAdvisor] = useState(false);
+  const [editAdvisorForm, setEditAdvisorForm] = useState<{ name: string; specialty: string; vibe: string }>({
+    name: '',
+    specialty: '',
+    vibe: ''
+  });
+  const [savingAdvisor, setSavingAdvisor] = useState(false);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -343,6 +352,109 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     }
   };
 
+  const handleViewAdvisor = (advisor: CustomAdvisor) => {
+    setSelectedAdvisor(advisor);
+    const profile = advisor.profile?.data;
+    setEditAdvisorForm({
+      name: advisor.name,
+      specialty: advisor.specialty,
+      vibe: profile?.your_vibe || ''
+    });
+    setIsEditingAdvisor(false);
+  };
+
+  const handleCloseAdvisor = () => {
+    setSelectedAdvisor(null);
+    setIsEditingAdvisor(false);
+    setEditAdvisorForm({ name: '', specialty: '', vibe: '' });
+  };
+
+  const handleStartEditAdvisor = () => {
+    setIsEditingAdvisor(true);
+  };
+
+  const handleCancelEditAdvisor = () => {
+    if (selectedAdvisor) {
+      const profile = selectedAdvisor.profile?.data;
+      setEditAdvisorForm({
+        name: selectedAdvisor.name,
+        specialty: selectedAdvisor.specialty,
+        vibe: profile?.your_vibe || ''
+      });
+    }
+    setIsEditingAdvisor(false);
+  };
+
+  const handleSaveAdvisor = async () => {
+    if (!selectedAdvisor) return;
+
+    if (!editAdvisorForm.name.trim()) {
+      showToast({ message: 'Name is required', type: 'error' });
+      return;
+    }
+    if (editAdvisorForm.name.trim().length < 2) {
+      showToast({ message: 'Name must be at least 2 characters', type: 'error' });
+      return;
+    }
+    if (!editAdvisorForm.specialty.trim()) {
+      showToast({ message: 'Specialty is required', type: 'error' });
+      return;
+    }
+    if (editAdvisorForm.specialty.trim().length < 5) {
+      showToast({ message: 'Specialty must be at least 5 characters', type: 'error' });
+      return;
+    }
+    if (!editAdvisorForm.vibe.trim()) {
+      showToast({ message: 'Vibe is required', type: 'error' });
+      return;
+    }
+    if (editAdvisorForm.vibe.trim().length < 5) {
+      showToast({ message: 'Vibe must be at least 5 characters', type: 'error' });
+      return;
+    }
+
+    setSavingAdvisor(true);
+
+    try {
+      const currentProfile = selectedAdvisor.profile;
+      if (!currentProfile) {
+        showToast({ message: 'Advisor profile not found', type: 'error' });
+        return;
+      }
+      
+      const updatedProfile = {
+        ...currentProfile,
+        spec: currentProfile.spec || 'gameapy/v1',
+        spec_version: currentProfile.spec_version || '1.0.0',
+        data: {
+          ...currentProfile.data,
+          name: editAdvisorForm.name.trim(),
+          who_you_are: editAdvisorForm.specialty.trim(),
+          your_vibe: editAdvisorForm.vibe.trim()
+        }
+      };
+
+      const response = await apiService.updateCustomAdvisor(selectedAdvisor.id, updatedProfile);
+
+      if (response.success) {
+        showToast({ message: 'Advisor updated successfully', type: 'success' });
+        await loadAdvisors();
+        const updatedAdvisor = advisors.find(a => a.id === selectedAdvisor.id);
+        if (updatedAdvisor) {
+          setSelectedAdvisor({ ...updatedAdvisor, name: editAdvisorForm.name.trim(), specialty: editAdvisorForm.specialty.trim() });
+        }
+        setIsEditingAdvisor(false);
+      } else {
+        showToast({ message: response.message || 'Failed to update advisor', type: 'error' });
+      }
+    } catch (err) {
+      console.error('Failed to update advisor:', err);
+      showToast({ message: 'Failed to update advisor', type: 'error' });
+    } finally {
+      setSavingAdvisor(false);
+    }
+  };
+
   const getInitialCreateForm = (cardType: CardType): Record<string, string> => {
     if (cardType === 'world') {
       return { title: '', description: '', event_type: '' };
@@ -451,7 +563,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
         {!selectedCard && !isCreating && (
           <div className="px-5 pb-4 flex-shrink-0 bg-white border-b border-gray-100">
             <div className="segmented-control mb-4">
-              {(['self', 'character', 'world', 'advisor'] as TabType[]).map((tab) => (
+              {(['self', 'character', 'world', 'advisor', 'farm'] as TabType[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -463,21 +575,25 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
               ))}
             </div>
 
-            <div className="search-wrapper">
-              <Search className="search-icon w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search cards..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="card-input"
-              />
-            </div>
+            {activeTab !== 'farm' && (
+              <div className="search-wrapper">
+                <Search className="search-icon w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search cards..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="card-input"
+                />
+              </div>
+            )}
           </div>
         )}
 
         <div className="flex-1 overflow-y-auto p-5 bg-gray-50 relative">
-          {loading && !selectedCard && !isCreating && activeTab !== 'advisor' ? (
+          {activeTab === 'farm' ? (
+            <FarmTab />
+          ) : loading && !selectedCard && !isCreating && activeTab !== 'advisor' ? (
             <div className="flex justify-center items-center py-12">
               <LoadingSpinner size="lg" />
             </div>
@@ -524,6 +640,26 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                 counselorColor={counselorColor}
               />
             )
+          ) : selectedAdvisor ? (
+            isEditingAdvisor ? (
+              <AdvisorEditForm
+                form={editAdvisorForm}
+                onChange={(field, value) => setEditAdvisorForm(prev => ({ ...prev, [field]: value }))}
+                onSave={handleSaveAdvisor}
+                onCancel={handleCancelEditAdvisor}
+                saving={savingAdvisor}
+                counselorColor={counselorColor}
+              />
+            ) : (
+              <AdvisorDetailView
+                advisor={selectedAdvisor}
+                onEdit={handleStartEditAdvisor}
+                onDelete={() => handleDeleteAdvisor(selectedAdvisor.id, selectedAdvisor.name)}
+                onClose={handleCloseAdvisor}
+                deleting={deletingAdvisorId === selectedAdvisor.id}
+                counselorColor={counselorColor}
+              />
+            )
           ) : (activeTab === 'advisor' ? filteredAdvisors.length === 0 : filteredCards.length === 0) ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
@@ -532,7 +668,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
               <p className="font-sans text-gray-600 text-base mb-6">{getEmptyStateMessage()}</p>
               {!debouncedSearchQuery && activeTab !== 'advisor' && (
                 <button
-                  onClick={() => handleStartCreate(activeTab)}
+                  onClick={() => handleStartCreate(activeTab as CardType)}
                   className="pill-button pill-button-primary"
                   style={{ background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)` }}
                 >
@@ -547,6 +683,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                 <div
                   key={advisor.id}
                   className="card-item"
+                  onClick={() => handleViewAdvisor(advisor)}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -565,15 +702,21 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                         Created: {formatTimestamp(advisor.created_at)}
                       </p>
                     </div>
-                    <button
-                      onClick={() => handleDeleteAdvisor(advisor.id, advisor.name)}
-                      disabled={deletingAdvisorId === advisor.id}
-                      className="min-h-[44px] min-w-[44px] p-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      aria-label={`Delete ${advisor.name}`}
-                      title="Delete advisor"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteAdvisor(advisor.id, advisor.name);
+                        }}
+                        disabled={deletingAdvisorId === advisor.id}
+                        className="min-h-[44px] min-w-[44px] p-2 rounded-lg hover:bg-red-50 text-red-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        aria-label={`Delete ${advisor.name}`}
+                        title="Delete advisor"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                      <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -616,7 +759,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
 
           {!selectedCard && !isCreating && activeTab !== 'advisor' && filteredCards.length > 0 && (
             <button
-              onClick={() => handleStartCreate(activeTab)}
+              onClick={() => handleStartCreate(activeTab as CardType)}
               className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-10"
               style={{
                 background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)`,
@@ -1153,6 +1296,198 @@ function CardCreateForm({
           style={{ background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)` }}
         >
           {saving ? 'Saving...' : 'Save Card'}
+        </button>
+        <button
+          onClick={onCancel}
+          disabled={saving}
+          className="pill-button pill-button-secondary"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function AdvisorDetailView({
+  advisor,
+  onEdit,
+  onDelete,
+  onClose,
+  deleting,
+  counselorColor,
+}: {
+  advisor: CustomAdvisor;
+  onEdit: () => void;
+  onDelete: () => void;
+  onClose: () => void;
+  deleting: boolean;
+  counselorColor: string;
+}) {
+  const profile = advisor.profile?.data;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+        <button
+          onClick={onClose}
+          className="min-h-[44px] min-w-[44px] flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-sans">Back</span>
+        </button>
+        <span className="badge badge-pinned">🤖 Custom Advisor</span>
+      </div>
+
+      <div className="card-detail-section">
+        <div className="card-detail-field">
+          <div className="card-detail-label">Name</div>
+          <p className="card-detail-value">{advisor.name}</p>
+        </div>
+        <div className="card-detail-field">
+          <div className="card-detail-label">Specialty</div>
+          <p className="card-detail-value whitespace-pre-wrap">{advisor.specialty}</p>
+        </div>
+        {profile?.your_vibe && (
+          <div className="card-detail-field">
+            <div className="card-detail-label">Vibe</div>
+            <p className="card-detail-value whitespace-pre-wrap">{profile.your_vibe}</p>
+          </div>
+        )}
+        {profile?.who_you_are && (
+          <div className="card-detail-field">
+            <div className="card-detail-label">Who You Are</div>
+            <p className="card-detail-value whitespace-pre-wrap">{profile.who_you_are}</p>
+          </div>
+        )}
+        {profile?.your_worldview && (
+          <div className="card-detail-field">
+            <div className="card-detail-label">Worldview</div>
+            <p className="card-detail-value whitespace-pre-wrap">{profile.your_worldview}</p>
+          </div>
+        )}
+      </div>
+
+      <div className="pt-2">
+        <button
+          onClick={onEdit}
+          className="pill-button pill-button-primary w-full"
+          style={{ background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)` }}
+        >
+          <Settings className="w-5 h-5 mr-2" />
+          Edit Advisor
+        </button>
+      </div>
+
+      <div className="pt-2">
+        <button
+          onClick={onDelete}
+          disabled={deleting}
+          className="pill-button pill-button-danger w-full"
+        >
+          <Trash2 className="w-5 h-5 mr-2" />
+          {deleting ? 'Deleting...' : 'Delete Advisor'}
+        </button>
+      </div>
+
+      <p className="text-center text-xs text-gray-400 mt-4">
+        Created {formatTimestamp(advisor.created_at)}
+      </p>
+    </div>
+  );
+}
+
+function AdvisorEditForm({
+  form,
+  onChange,
+  onSave,
+  onCancel,
+  saving,
+  counselorColor,
+}: {
+  form: { name: string; specialty: string; vibe: string };
+  onChange: (field: string, value: string) => void;
+  onSave: () => void;
+  onCancel: () => void;
+  saving: boolean;
+  counselorColor: string;
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+        <button
+          onClick={onCancel}
+          disabled={saving}
+          className="min-h-[44px] min-w-[44px] flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-sans">Cancel</span>
+        </button>
+        <span className="font-sans font-semibold text-gray-900">Edit Advisor</span>
+        <div className="w-16" />
+      </div>
+
+      <div className="card-detail-section">
+        <div className="mb-4">
+          <label className="card-detail-label">
+            Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => onChange('name', e.target.value)}
+            maxLength={50}
+            className="card-input"
+            placeholder="e.g., Captain Wisdom"
+          />
+          <div className="text-xs text-gray-400 text-right mt-1">
+            {form.name.length} / 50
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <label className="card-detail-label">
+            Specialty <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={form.specialty}
+            onChange={(e) => onChange('specialty', e.target.value)}
+            maxLength={200}
+            rows={3}
+            className="card-textarea"
+            placeholder="e.g., Life advice with maritime metaphors and seafaring wisdom"
+          />
+          <div className="text-xs text-gray-400 text-right mt-1">
+            {form.specialty.length} / 200
+          </div>
+        </div>
+
+        <div>
+          <label className="card-detail-label">
+            Vibe <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={form.vibe}
+            onChange={(e) => onChange('vibe', e.target.value)}
+            maxLength={200}
+            rows={3}
+            className="card-textarea"
+            placeholder="e.g., Warm, witty, uses sailing metaphors, speaks like a seasoned captain"
+          />
+          <div className="text-xs text-gray-400 text-right mt-1">
+            {form.vibe.length} / 200
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-3 pt-2">
+        <button
+          onClick={onSave}
+          disabled={saving}
+          className="pill-button pill-button-primary flex-1"
+          style={{ background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)` }}
+        >
+          {saving ? 'Saving...' : 'Save Changes'}
         </button>
         <button
           onClick={onCancel}

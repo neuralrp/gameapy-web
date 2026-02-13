@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './contexts/AppContext';
+import { FarmProvider } from './contexts/FarmContext';
 import { CounselorSelection } from './screens/CounselorSelection';
 import { ChatScreen } from './screens/ChatScreen';
 import { CardInventoryModal } from './screens/CardInventoryModal';
@@ -69,7 +70,9 @@ function AppContent() {
 function App() {
   return (
     <AppProvider>
-      <AppContent />
+      <FarmProvider>
+        <AppContent />
+      </FarmProvider>
     </AppProvider>
   );
 }

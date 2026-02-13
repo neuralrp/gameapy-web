@@ -154,3 +154,65 @@ export interface StreamChunk {
   };
   error?: string;
 }
+
+// Farm Types
+export interface PlantedCrop {
+  plotIndex: number;
+  cropType: string;
+  plantedAtMessage: number;
+  growthDuration: number;
+  isHarvested: boolean;
+}
+
+export interface FarmAnimal {
+  slotIndex: number;
+  animalType: string;
+  acquiredAtMessage: number;
+  maturityDuration: number;
+  isMature: boolean;
+}
+
+export interface FarmDecoration {
+  type: string;
+  x: number;
+  y: number;
+  variant: number;
+}
+
+export interface FarmStatus {
+  gold: number;
+  farmLevel: number;
+  messageCounter: number;
+  crops: PlantedCrop[];
+  animals: FarmAnimal[];
+  decorations: FarmDecoration[];
+  maxPlots: number;
+  maxBarnSlots: number;
+  unlocks: string[];
+}
+
+export interface FarmShopData {
+  seeds: Array<{
+    id: string;
+    name: string;
+    cost: number;
+    growthMessages: number;
+  }>;
+  animals: Array<{
+    id: string;
+    name: string;
+    cost: number;
+    maturityMessages: number;
+  }>;
+  decorations: Array<{
+    id: string;
+    name: string;
+    cost: number;
+  }>;
+  playerGold: number;
+  farmLevel: number;
+  currentPlots: number;
+  currentBarnSlots: number;
+  upgradeCost: number | null;
+  nextLevelUnlocks: string[];
+}
