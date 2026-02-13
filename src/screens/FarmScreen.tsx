@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FarmHeader } from '../components/farm/FarmHeader';
 import { FarmArea } from '../components/farm/FarmArea';
@@ -6,6 +6,7 @@ import { FarmToolbar } from '../components/farm/FarmToolbar';
 import { FarmShop } from '../components/farm/FarmShop';
 import { FarmDecorations } from '../components/farm/FarmDecorations';
 import { FarmSkyOverlay } from '../components/farm/FarmSkyOverlay';
+import { FarmWelcomeModal } from '../components/farm/FarmWelcomeModal';
 
 import { useFarm } from '../contexts/FarmContext';
 import { useAudio } from '../hooks/useAudio';
@@ -51,20 +52,23 @@ interface SeedInventory {
 
 export function FarmScreen() {
   const navigate = useNavigate();
-  const { farmStatus, loading, refreshFarm, tillPlot, waterCrop, plantCrop, harvestCrop } = useFarm();
+  const { farmStatus, loading, refreshFarm, tillPlot, waterCrop, plantCrop, harvestCrop, dailyLogin, upgradeFarm } = useFarm();
   const { playMusic, stopMusic, playSound, isMuted, toggleMute } = useAudio();
   const timeOfDay = useTimeOfDay();
   const haptics = useHaptics();
 
   const [shopOpen, setShopOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
   const [selectedSeed, setSelectedSeed] = useState<string | null>(null);
   const [tilledPlots, setTilledPlots] = useState<Set<number>>(new Set());
   const [crops, setCrops] = useState<Crop[]>([]);
-  const [gold, setGold] = useState(100);
+  const [gold, setGold] = useState(0);
   const [goldIncrements, setGoldIncrements] = useState<GoldIncrement[]>([]);
   const [animatingPlots, setAnimatingPlots] = useState<Map<number, 'till' | 'plant' | 'water'>>(new Map());
   const [shake, setShake] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [dailyLoginClaimed, setDailyLoginClaimed] = useState(false);
+  const hasInitializedRef = useRef(false);
   const [seedInventory, setSeedInventory] = useState<SeedInventory>({
     parsnip: 5,
     cauliflower: 3,
@@ -105,8 +109,25 @@ export function FarmScreen() {
       const tilled = new Set<number>(farmStatus.tilledPlots || []);
       farmStatus.crops.forEach(c => tilled.add(c.plotIndex));
       setTilledPlots(tilled);
+
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true;
+        if (farmStatus.messageCounter === 0 && !dailyLoginClaimed) {
+          setWelcomeOpen(true);
+        }
+        handleDailyLogin();
+      }
     }
   }, [farmStatus]);
+
+  const handleDailyLogin = async () => {
+    if (dailyLoginClaimed) return;
+    const result = await dailyLogin();
+    if (result.success) {
+      setDailyLoginClaimed(true);
+      setGold(prev => prev + 5);
+    }
+  };
 
   useEffect(() => {
     playMusic();
@@ -200,9 +221,10 @@ export function FarmScreen() {
     
     playSound('plant');
     
+    const newCount = seedInventory[seedType] - 1;
     setSeedInventory(prev => ({
       ...prev,
-      [seedType]: prev[seedType] - 1,
+      [seedType]: newCount,
     }));
 
     setAnimatingPlots(prev => { const m = new Map(prev); m.set(plotIndex, 'plant'); return m; });
@@ -222,7 +244,7 @@ export function FarmScreen() {
     setCrops(prev => [...prev, newCrop]);
     plantCrop(seedType, plotIndex);
     
-    if (seedInventory[seedType] <= 1) {
+    if (newCount <= 0) {
       setSelectedSeed(null);
     }
   };
@@ -378,6 +400,26 @@ export function FarmScreen() {
         onClose={() => setShopOpen(false)}
         gold={gold}
         onBuySeed={handleBuySeed}
+        farmLevel={farmStatus?.farmLevel || 1}
+        onBuyAnimal={(animalType: string) => {
+          const costs: Record<string, number> = { chicken: 30, cow: 100, horse: 60 };
+          if (gold >= costs[animalType]) {
+            setGold(prev => prev - costs[animalType]);
+          }
+        }}
+        onUpgradeFarm={async () => {
+          const upgradeCosts: Record<number, number> = { 1: 75, 2: 150, 3: 300, 4: 600 };
+          const cost = upgradeCosts[farmStatus?.farmLevel || 1] || 75;
+          if (gold >= cost) {
+            setGold(prev => prev - cost);
+            await upgradeFarm();
+          }
+        }}
+      />
+
+      <FarmWelcomeModal
+        isOpen={welcomeOpen}
+        onClose={() => setWelcomeOpen(false)}
       />
     </div>
   );

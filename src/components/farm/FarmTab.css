@@ -5,6 +5,73 @@
   min-height: 400px;
 }
 
+/* Farm Tile Improvements */
+.farm-tile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.till-hint {
+  position: absolute;
+  font-size: 10px;
+  color: rgba(72, 48, 24, 0.5);
+  font-family: 'VT323', monospace;
+  pointer-events: none;
+}
+
+.water-needed-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  animation: water-pulse 1.5s ease-in-out infinite;
+}
+
+.water-drop {
+  font-size: 14px;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
+}
+
+@keyframes water-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+
+.watered-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(66, 135, 245, 0.25);
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+.harvest-indicator {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 215, 0, 0.2);
+  animation: harvest-glow 1s ease-in-out infinite;
+}
+
+.harvest-star {
+  font-size: 24px;
+  animation: star-bounce 0.6s ease-in-out infinite;
+}
+
+@keyframes harvest-glow {
+  0%, 100% { background: rgba(255, 215, 0, 0.15); }
+  50% { background: rgba(255, 215, 0, 0.3); }
+}
+
+@keyframes star-bounce {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50% { transform: scale(1.2) rotate(10deg); }
+}
+
 .farm-header {
   display: flex;
   justify-content: space-between;
@@ -353,6 +420,210 @@
 
 .upgrade-icon {
   font-size: 32px;
+}
+
+/* Farm Shop - New Tabbed Version */
+.farm-shop-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.farm-shop {
+  background: #f8f0d8;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 420px;
+  max-height: 85vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 3px solid #306850;
+}
+
+.farm-shop-header {
+  padding: 16px;
+  background: #306850;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.farm-shop-title {
+  margin: 0;
+  font-family: 'VT323', monospace;
+  font-size: 24px;
+}
+
+.farm-shop-gold {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  background: rgba(0,0,0,0.2);
+  padding: 4px 12px;
+  border-radius: 8px;
+}
+
+.farm-shop-close {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.farm-shop-tabs {
+  display: flex;
+  border-bottom: 3px solid #306850;
+  background: #e8d0a0;
+}
+
+.farm-shop-tab {
+  flex: 1;
+  padding: 12px 8px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  color: #483018;
+  transition: all 0.15s ease;
+}
+
+.farm-shop-tab:hover {
+  background: rgba(48, 104, 80, 0.1);
+}
+
+.farm-shop-tab.active {
+  background: #306850;
+  color: white;
+}
+
+.farm-shop-content {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.farm-shop-items {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.shop-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 10px;
+  border: 2px solid #306850;
+  transition: transform 0.15s ease;
+}
+
+.shop-item:hover {
+  transform: scale(1.01);
+}
+
+.shop-item-icon {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.shop-animal-icon,
+.shop-upgrade-icon {
+  font-size: 36px;
+  width: 44px;
+  text-align: center;
+}
+
+.shop-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.shop-item-name {
+  font-family: 'VT323', monospace;
+  font-size: 18px;
+  font-weight: bold;
+  color: #483018;
+}
+
+.shop-item-duration {
+  font-size: 12px;
+  color: #666;
+}
+
+.shop-item-benefit {
+  font-size: 12px;
+  color: #4CAF50;
+  font-weight: bold;
+}
+
+.shop-item-buy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.shop-item-cost {
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  color: #8b4513;
+  font-weight: bold;
+}
+
+.shop-buy-btn {
+  padding: 8px 16px;
+  background: #88c070;
+  border: 2px solid #306850;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: white;
+  transition: all 0.15s ease;
+}
+
+.shop-buy-btn:hover:not(:disabled) {
+  background: #7ab05f;
+}
+
+.shop-buy-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.shop-buy-btn:disabled {
+  background: #ccc;
+  border-color: #999;
+  cursor: not-allowed;
+  color: #666;
+}
+
+.shop-max-level {
+  text-align: center;
+  padding: 24px;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  color: #306850;
 }
 
 .farm-loading {
@@ -776,4 +1047,121 @@
   .barn-grid {
     grid-template-columns: repeat(5, 1fr);
   }
+}
+
+/* Welcome Modal */
+.farm-welcome-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.farm-welcome-modal {
+  background: #f8f0d8;
+  border-radius: 16px;
+  padding: 24px;
+  width: 90%;
+  max-width: 380px;
+  border: 3px solid #306850;
+  animation: slideUp 0.4s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.farm-welcome-header h2 {
+  font-family: 'VT323', monospace;
+  color: #306850;
+  text-align: center;
+  margin: 0 0 20px 0;
+  font-size: 24px;
+}
+
+.farm-welcome-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.farm-welcome-tip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 8px;
+  border: 2px solid #88c070;
+}
+
+.farm-welcome-icon {
+  font-size: 24px;
+}
+
+.farm-welcome-text {
+  font-family: 'VT323', monospace;
+  font-size: 16px;
+  color: #483018;
+}
+
+.farm-welcome-instructions {
+  background: #e8d0a0;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.farm-welcome-instructions h3 {
+  font-family: 'VT323', monospace;
+  color: #306850;
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.farm-welcome-instructions ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.farm-welcome-instructions li {
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: #483018;
+  margin-bottom: 4px;
+}
+
+.farm-welcome-button {
+  width: 100%;
+  padding: 14px;
+  background: #88c070;
+  border: 2px solid #306850;
+  border-radius: 8px;
+  font-family: 'VT323', monospace;
+  font-size: 20px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.farm-welcome-button:hover {
+  background: #7ab05f;
+}
+
+.farm-welcome-button:active {
+  transform: scale(0.98);
 }

@@ -1,5 +1,3 @@
-import { useState } from 'react';
-
 export type TileState = 'grass' | 'tilled' | 'planted' | 'mature';
 
 export interface Crop {
@@ -51,22 +49,26 @@ export function FarmTile({
   onTap,
   animating,
 }: FarmTileProps) {
-  const [waterVariant] = useState(() => Math.floor(Math.random() * 3));
   const isCurrentStageWatered = wateredStages.includes(currentStage);
+  const hasCrop = crop && state !== 'grass' && state !== 'tilled';
+  const isMature = state === 'mature';
 
   return (
     <div 
-      className={`farm-tile ${animating ? `animating-${animating}` : ''}`} 
+      className={`farm-tile ${animating ? `animating-${animating}` : ''} ${isMature ? 'mature' : ''}`} 
       onClick={onTap}
       data-state={state}
       data-index={plotIndex}
     >
       {state === 'grass' && (
-        <img 
-          src="/farm-assets/ground/grass.png" 
-          alt="Grass"
-          className="tile-base"
-        />
+        <>
+          <img 
+            src="/farm-assets/ground/grass.png" 
+            alt="Grass"
+            className="tile-base"
+          />
+          <div className="till-hint">Tap to till</div>
+        </>
       )}
       
       {state !== 'grass' && (
@@ -77,13 +79,13 @@ export function FarmTile({
             className="tile-base"
           />
           
-          {isCurrentStageWatered && (
-            <img 
-              src={`/farm-assets/soil_water/${waterVariant}.png`}
-              alt="Watered"
-              className="tile-overlay"
-            />
-          )}
+          {isCurrentStageWatered ? (
+            <div className="watered-overlay" />
+          ) : hasCrop && !isMature ? (
+            <div className="water-needed-indicator">
+              <span className="water-drop">💧</span>
+            </div>
+          ) : null}
         </>
       )}
       
@@ -91,12 +93,14 @@ export function FarmTile({
         <img 
           src={getCropImage(crop.cropType, crop.growthStage)}
           alt={crop.cropType}
-          className="crop-sprite"
+          className={`crop-sprite ${isMature ? 'ready' : 'growing'}`}
         />
       )}
       
       {state === 'mature' && (
-        <div className="harvest-indicator" />
+        <div className="harvest-indicator">
+          <span className="harvest-star">⭐</span>
+        </div>
       )}
     </div>
   );
