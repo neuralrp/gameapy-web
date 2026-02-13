@@ -85,6 +85,7 @@ export class ApiService {
       const response = await fetch(url, {
         headers,
         ...options,
+        signal: AbortSignal.timeout(10000),
       });
 
       if (response.status === 401) {

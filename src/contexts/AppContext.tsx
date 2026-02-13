@@ -93,6 +93,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!token) {
       setIsAuthenticated(false);
       setAuthLoading(false);
+      setClientLoading(false);
       return;
     }
 
