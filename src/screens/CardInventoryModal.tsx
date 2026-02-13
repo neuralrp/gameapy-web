@@ -458,7 +458,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                   className={`segmented-control-item ${activeTab === tab ? 'active' : ''}`}
                   style={activeTab === tab ? { color: counselorColor } : { color: '#6B7280' }}
                 >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  {tab === 'world' ? 'Universal' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
             </div>
