@@ -1,6 +1,6 @@
 # Gameapy - Agent Quick Reference
 
-**Version**: 3.5.0 | **Last Updated**: 2026-02-11 (Streaming chat endpoint with SSE support)
+**Version**: 3.8.0 | **Last Updated**: 2026-02-13 (Garden Minigame - Phase 9 complete)
 
 ---
 
@@ -52,7 +52,7 @@ gameapy-web/              # Web frontend repo
 
 **Completed Backend**: Phases 1-7 (All backend features + complete test infrastructure)
 **Completed Frontend**: Phases 0-6 (Web MVP complete + deployed to Vercel)
-**Latest Update**: CardInventoryModal iOS-style redesign, Easter egg "Summon Deirdre", schema migrations 004-006, auto-seed personas
+**Latest Update**: Garden Minigame (Phase 9) - Farm UI with crop grid, planting, harvesting, and growth visualization. Farm API integration, FarmTab component, and FarmContext state management.
 **Production Deploy**: Backend on Railway, Frontend on Vercel
 **Status**: Live at https://gameapy-web.vercel.app
 
@@ -111,6 +111,14 @@ gameapy-web/              # Web frontend repo
 - Retry buttons for all failed API requests
 - Mobile keyboard overlap prevention (flex-shrink-0 on headers/footers)
 - Vercel configuration with Railway backend integration
+- **Garden Minigame UI**:
+  - FarmTab component with 4x4 crop grid
+  - Plant crops: potato, tomato, corn, cauliflower, parsnip
+  - Visual growth stages (0-5) with crop sprites
+  - Harvest ready indicator for mature crops
+  - FarmContext for state management
+  - Crop/seed image assets (public/farm-assets/)
+  - Advisor tab in CardInventoryModal
 
 ---
 
@@ -271,7 +279,7 @@ response = await simple_llm_client.chat_completion(
 | 6 | ✅ | Pytest Infrastructure (test isolation, LLM mocking, fixtures) |
 | 7 | ✅ | New Test Coverage (DB, API, E2E) - 89/89 tests passing (100%), 68% coverage |
 | 8 | ❌ | Flutter UI Development (ARCHIVED - replaced by web MVP) |
-| 9 | ⏳ | Garden Minigame (optional - deferred) |
+| 9 | ✅ | Garden Minigame - Farm UI with crop grid, planting/harvesting, growth stages, FarmTab component, FarmContext |
 
 ### Frontend Phases (Web MVP)
 
@@ -332,6 +340,10 @@ response = await simple_llm_client.chat_completion(
 | `gameapy-web/src/screens/ChatScreen.tsx` | Chat interface (UI complete, with polish) ✅ |
 | `gameapy-web/src/screens/CardInventoryModal.tsx` | Card inventory modal (complete with edit) ✅ |
 | `gameapy-web/src/screens/GuideScreen.tsx` | Organic card creation flow ✅ |
+| `gameapy-web/src/components/farm/FarmTab.tsx` | Farm minigame UI component ✅ |
+| `gameapy-web/src/components/farm/FarmTab.css` | Farm tab styles |
+| `gameapy-web/src/contexts/FarmContext.tsx` | Farm state management ✅ |
+| `gameapy-web/public/farm-assets/` | Crop and seed image assets |
 | `gameapy-web/src/components/ui/button.tsx` | Button component with GBA styling |
 | `gameapy-web/src/components/counselor/CounselorCard.tsx` | Counselor card component |
  | `gameapy-web/src/components/counselor/CounselorInfoModal.tsx` | Counselor details modal with counselor-specific colors ✅ |
