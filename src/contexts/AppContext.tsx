@@ -17,6 +17,7 @@ interface AppContextType {
   setAuthToken: (token: string | null) => void;
   isAuthenticated: boolean;
   authLoading: boolean;
+  clientLoading: boolean;
   sessionId: number | null;
   counselor: Counselor | null;
   setCounselor: (counselor: Counselor | null) => void;
@@ -50,6 +51,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [authToken, setAuthTokenState] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
+  const [clientLoading, setClientLoading] = useState(true);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [counselor, setCounselor] = useState<Counselor | null>(null);
   const [showInventory, setShowInventory] = useState(false);
@@ -114,6 +116,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(false);
     } finally {
       setAuthLoading(false);
+      setClientLoading(false);
     }
   };
 
@@ -231,6 +234,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setAuthToken,
         isAuthenticated,
         authLoading,
+        clientLoading,
         sessionId,
         counselor,
         setCounselor: handleSetCounselor,
