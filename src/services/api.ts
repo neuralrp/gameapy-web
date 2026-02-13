@@ -129,21 +129,21 @@ export class ApiService {
   }
 
   async login(username: string, password: string): Promise<APIResponse<{ access_token: string; user_id: number; username: string }>> {
-    return this.request('/api/v1/auth/login', {
+    return this.request('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
   }
 
   async register(username: string, password: string, name: string): Promise<APIResponse<{ access_token: string; user_id: number; username: string }>> {
-    return this.request('/api/v1/auth/register', {
+    return this.request('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ username, password, name }),
     });
   }
 
   async getMe(): Promise<APIResponse<{ user_id: number; username: string; name: string }>> {
-    return this.request('/api/v1/auth/me');
+    return this.request('/auth/me');
   }
 
   async getCounselors(): Promise<Counselor[]> {
