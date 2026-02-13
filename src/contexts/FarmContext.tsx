@@ -6,6 +6,8 @@ interface FarmContextType {
   farmStatus: FarmStatus | null;
   loading: boolean;
   refreshFarm: () => Promise<void>;
+  tillPlot: (plotIndex: number) => Promise<boolean>;
+  waterCrop: (plotIndex: number, stage: number) => Promise<boolean>;
   plantCrop: (cropType: string, plotIndex: number) => Promise<boolean>;
   harvestCrop: (plotIndex: number) => Promise<boolean>;
   buyAnimal: (animalType: string, slotIndex: number) => Promise<boolean>;
@@ -34,6 +36,38 @@ export function FarmProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     refreshFarm();
   }, []);
+
+  const tillPlot = async (plotIndex: number): Promise<boolean> => {
+    try {
+      const result = await (apiService as any).request(`/api/v1/farm/till?plot_index=${plotIndex}`, {
+        method: 'POST',
+      });
+      if (result.success) {
+        await refreshFarm();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to till plot:', error);
+      return false;
+    }
+  };
+
+  const waterCrop = async (plotIndex: number, stage: number): Promise<boolean> => {
+    try {
+      const result = await (apiService as any).request(`/api/v1/farm/water?plot_index=${plotIndex}&stage=${stage}`, {
+        method: 'POST',
+      });
+      if (result.success) {
+        await refreshFarm();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to water crop:', error);
+      return false;
+    }
+  };
 
   const plantCrop = async (cropType: string, plotIndex: number): Promise<boolean> => {
     try {
@@ -140,6 +174,8 @@ export function FarmProvider({ children }: { children: ReactNode }) {
         farmStatus,
         loading,
         refreshFarm,
+        tillPlot,
+        waterCrop,
         plantCrop,
         harvestCrop,
         buyAnimal,

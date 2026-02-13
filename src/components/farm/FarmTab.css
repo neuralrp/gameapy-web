@@ -361,3 +361,419 @@
   font-family: 'VT323', monospace;
   color: #483018;
 }
+
+/* Farm Scene Layout */
+.farm-scene {
+  background: linear-gradient(180deg, #87CEEB 0%, #88C070 100%);
+  border-radius: 16px;
+  padding: 16px;
+  min-height: 400px;
+}
+
+.decoration-section h2 {
+  display: none;
+}
+
+.decoration-row {
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0;
+}
+
+.decoration-tree {
+  font-size: 36px;
+  filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2));
+}
+
+.house-area {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.house {
+  font-size: 64px;
+  filter: drop-shadow(3px 3px 3px rgba(0,0,0,0.3));
+}
+
+/* Plot Grid - Touch optimized */
+.crops-section {
+  margin: 16px 0;
+}
+
+.crops-section h3 {
+  font-family: 'VT323', monospace;
+  color: #483018;
+  margin-bottom: 8px;
+  display: none;
+}
+
+.plot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.plot {
+  aspect-ratio: 1;
+  border: 3px solid #5D4037;
+  border-radius: 12px;
+  background: #8D6E63;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  min-height: 60px;
+  min-width: 60px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.plot:active {
+  transform: scale(0.95);
+}
+
+.plot.empty {
+  background: #A1887F;
+  border-color: #8D6E63;
+}
+
+.plot.has-crop {
+  background: #5D4037;
+}
+
+.plot.mature {
+  border-color: #FFD700;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+  animation: mature-glow 1.5s ease-in-out infinite;
+}
+
+.plot.selected {
+  border-color: #4CAF50;
+}
+
+@keyframes mature-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.4); }
+  50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.7); }
+}
+
+.crop-sprite {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.crop-sprite.growing {
+  animation: grow-wobble 2s ease-in-out infinite;
+}
+
+.crop-sprite.ready {
+  animation: ready-bounce 0.8s ease-in-out infinite;
+}
+
+@keyframes grow-wobble {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes ready-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.growth-bar {
+  position: absolute;
+  bottom: 4px;
+  left: 4px;
+  right: 4px;
+  height: 8px;
+  background: rgba(0,0,0,0.4);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.growth-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
+  transition: width 0.3s ease;
+}
+
+.harvest-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #FFD700;
+  color: #5D4037;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: bold;
+  animation: pulse 1s infinite;
+  white-space: nowrap;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.plant-button {
+  background: #4CAF50;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 20px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.plant-button:active {
+  transform: scale(0.9);
+}
+
+/* Fence Row */
+.fence-row {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 0;
+  background: #6D4C41;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+.fence-post {
+  font-size: 20px;
+  opacity: 0.8;
+}
+
+/* Barn and Pond Row */
+.barn-pond-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.barn-section,
+.pond-section {
+  flex: 1;
+}
+
+.barn-section h3,
+.pond-section h3 {
+  font-family: 'VT323', monospace;
+  color: #483018;
+  margin-bottom: 8px;
+}
+
+.barn-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.barn-slot {
+  aspect-ratio: 1;
+  border: 2px solid #8D6E63;
+  border-radius: 8px;
+  background: #D7CCC8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-height: 50px;
+  min-width: 50px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.barn-slot:active {
+  transform: scale(0.95);
+}
+
+.barn-slot.empty {
+  background: #BCAAA4;
+}
+
+.barn-slot.mature {
+  border-color: #FFD700;
+}
+
+.animal-emoji {
+  font-size: 28px;
+}
+
+.animal-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* Pond */
+.pond-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: linear-gradient(180deg, #81D4FA 0%, #4FC3F7 100%);
+  border-radius: 12px;
+  min-height: 80px;
+}
+
+.pond-water {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.water-effect {
+  font-size: 20px;
+  animation: water-ripple 2s ease-in-out infinite;
+}
+
+.water-effect:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.water-effect:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes water-ripple {
+  0%, 100% { transform: translateY(0); opacity: 0.7; }
+  50% { transform: translateY(-4px); opacity: 1; }
+}
+
+.mermaid {
+  font-size: 40px;
+  animation: mermaid-float 3s ease-in-out infinite;
+}
+
+@keyframes mermaid-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.empty-pond {
+  color: #5D4037;
+  font-size: 12px;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Seed Section */
+.seed-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 2px solid #8D6E63;
+}
+
+.seed-section h3 {
+  font-family: 'VT323', monospace;
+  color: #483018;
+  margin-bottom: 12px;
+}
+
+.seed-selector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.seed-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 14px;
+  border: 2px solid #5D4037;
+  border-radius: 12px;
+  background: #EFEBE9;
+  cursor: pointer;
+  min-width: 60px;
+  min-height: 60px;
+  transition: all 0.15s ease;
+}
+
+.seed-button:active {
+  transform: scale(0.95);
+}
+
+.seed-button.selected {
+  border-color: #4CAF50;
+  background: #C8E6C9;
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.4);
+}
+
+.seed-emoji {
+  font-size: 24px;
+}
+
+.seed-name {
+  font-size: 11px;
+  color: #5D4037;
+  margin-top: 4px;
+  font-family: 'VT323', monospace;
+}
+
+/* Harvest Particles */
+.harvest-particle {
+  position: fixed;
+  font-size: 24px;
+  pointer-events: none;
+  animation: particle-burst 0.8s ease-out forwards;
+  z-index: 1000;
+}
+
+@keyframes particle-burst {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -150%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Shop Modal Styles */
+.shop-emoji {
+  font-size: 28px;
+}
+
+.buy-button {
+  padding: 10px 16px;
+  background: #4CAF50;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'VT323', monospace;
+  font-size: 14px;
+  color: white;
+  min-width: 60px;
+  transition: all 0.15s ease;
+}
+
+.buy-button:active {
+  transform: scale(0.95);
+}
+
+.buy-button:disabled {
+  background: #BDBDBD;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .plot-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+  
+  .barn-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}

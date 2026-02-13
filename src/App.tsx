@@ -6,6 +6,7 @@ import { ChatScreen } from './screens/ChatScreen';
 import { CardInventoryModal } from './screens/CardInventoryModal';
 import { AdvisorCreatorScreen } from './screens/AdvisorCreatorScreen';
 import { LoginScreen } from './screens/LoginScreen';
+import { FarmScreen } from './screens/FarmScreen';
 import { Toast } from './components/shared/Toast';
 
 function AppContent() {
@@ -42,6 +43,7 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="/create-advisor" element={<AdvisorCreatorScreen />} />
+        <Route path="/farm" element={<FarmScreen />} />
         <Route path="/*" element={
           showInventoryFullScreen ? (
             <CardInventoryModal

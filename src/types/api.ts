@@ -162,6 +162,8 @@ export interface PlantedCrop {
   plantedAtMessage: number;
   growthDuration: number;
   isHarvested: boolean;
+  isWatered: boolean;
+  growthStage: number;
 }
 
 export interface FarmAnimal {
@@ -184,6 +186,7 @@ export interface FarmStatus {
   farmLevel: number;
   messageCounter: number;
   crops: PlantedCrop[];
+  tilledPlots: number[];
   animals: FarmAnimal[];
   decorations: FarmDecoration[];
   maxPlots: number;

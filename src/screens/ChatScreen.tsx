@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowUp } from 'lucide-react';
+import { ArrowLeft, ArrowUp, Home } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { CounselorInfoModal } from '../components/counselor/CounselorInfoModal';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { HealthStatusIcon } from '../components/shared/HealthStatusIcon';
@@ -16,6 +17,7 @@ export function ChatScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showCounselorInfo, setShowCounselorInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     startHealthChecks();
@@ -233,6 +235,14 @@ export function ChatScreen() {
           >
             {counselor?.name}
           </h1>
+        </button>
+        <button
+          onClick={() => navigate('/farm')}
+          className="min-h-[44px] min-w-[44px] flex items-center justify-center"
+          style={{ color: chatTextColor }}
+          aria-label="Go to Farm"
+        >
+          <Home className="w-6 h-6" />
         </button>
         <HealthStatusIcon onClick={() => setShowHealthModal(true)} />
       </header>

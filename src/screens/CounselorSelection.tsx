@@ -6,6 +6,7 @@ import { apiService } from '../services/api';
 import type { Counselor } from '../types/counselor';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
+import { FarmEntryCard } from '../components/farm/FarmEntryCard';
 
 export function CounselorSelection() {
   const { setCounselor, setShowInventoryFullScreen, logout } = useApp();
@@ -50,6 +51,10 @@ export function CounselorSelection() {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const handleFarmClick = () => {
+    navigate('/farm');
   };
 
   const getCounselorColor = (counselor: Counselor) => {
@@ -125,6 +130,7 @@ export function CounselorSelection() {
               </button>
             );
           })}
+          <FarmEntryCard onClick={handleFarmClick} />
         </div>
       </div>
 

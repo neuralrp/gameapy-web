@@ -7,9 +7,8 @@ import { useDebounce } from '../hooks/useDebounce';
 import type { Card, CardType } from '../types/card';
 import type { CustomAdvisor } from '../types/counselor';
 import { ArrowLeft, Search, ChevronRight, Settings, Plus, Trash2 } from 'lucide-react';
-import { FarmTab } from '../components/farm/FarmTab';
 
-type TabType = 'self' | 'character' | 'world' | 'advisor' | 'farm';
+type TabType = 'self' | 'character' | 'world' | 'advisor';
 
 function formatTimestamp(timestamp: string): string {
   const date = new Date(timestamp);
@@ -563,7 +562,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
         {!selectedCard && !isCreating && (
           <div className="px-5 pb-4 flex-shrink-0 bg-white border-b border-gray-100">
             <div className="segmented-control mb-4">
-              {(['self', 'character', 'world', 'advisor', 'farm'] as TabType[]).map((tab) => (
+              {(['self', 'character', 'world', 'advisor'] as TabType[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -575,25 +574,21 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
               ))}
             </div>
 
-            {activeTab !== 'farm' && (
-              <div className="search-wrapper">
-                <Search className="search-icon w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search cards..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="card-input"
-                />
-              </div>
-            )}
+            <div className="search-wrapper">
+              <Search className="search-icon w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search cards..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="card-input"
+              />
+            </div>
           </div>
         )}
 
         <div className="flex-1 overflow-y-auto p-5 bg-gray-50 relative">
-          {activeTab === 'farm' ? (
-            <FarmTab />
-          ) : loading && !selectedCard && !isCreating && activeTab !== 'advisor' ? (
+          {loading && !selectedCard && !isCreating && activeTab !== 'advisor' ? (
             <div className="flex justify-center items-center py-12">
               <LoadingSpinner size="lg" />
             </div>

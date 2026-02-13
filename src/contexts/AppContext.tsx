@@ -25,6 +25,8 @@ interface AppContextType {
   setShowInventory: (show: boolean) => void;
   showInventoryFullScreen: boolean;
   setShowInventoryFullScreen: (show: boolean) => void;
+  showFarm: boolean;
+  setShowFarm: (show: boolean) => void;
   sessionMessageCount: number;
   incrementSessionMessageCount: () => void;
   resetSessionMessageCount: () => void;
@@ -56,6 +58,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [counselor, setCounselor] = useState<Counselor | null>(null);
   const [showInventory, setShowInventory] = useState(false);
   const [showInventoryFullScreen, setShowInventoryFullScreen] = useState(false);
+  const [showFarm, setShowFarm] = useState(false);
   const [sessionMessageCount, setSessionMessageCount] = useState(0);
   const [toast, setToast] = useState<Toast | null>(null);
   const [healthStatus, setHealthStatus] = useState<HealthCheck | null>(null);
@@ -243,6 +246,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setShowInventory,
         showInventoryFullScreen,
         setShowInventoryFullScreen,
+        showFarm,
+        setShowFarm,
         sessionMessageCount,
         incrementSessionMessageCount,
         resetSessionMessageCount,
