@@ -6,18 +6,12 @@ import { FarmToolbar } from '../components/farm/FarmToolbar';
 import { FarmShop } from '../components/farm/FarmShop';
 import { FarmDecorations } from '../components/farm/FarmDecorations';
 import { FarmSkyOverlay } from '../components/farm/FarmSkyOverlay';
-import { HarvestParticles } from '../components/farm/HarvestParticles';
+
 import { useFarm } from '../contexts/FarmContext';
 import { useAudio } from '../hooks/useAudio';
 import { useTimeOfDay } from '../hooks/useTimeOfDay';
 import { useHaptics } from '../hooks/useHaptics';
 import type { Crop } from '../components/farm/FarmTile';
-
-interface ParticleState {
-  id: number;
-  x: number;
-  y: number;
-}
 
 interface GoldIncrement {
   id: number;
@@ -167,15 +161,24 @@ export function FarmScreen() {
       const maxStage = GROWTH_STAGES[existingCrop.cropType] || 5;
       if (existingCrop.growthStage >= maxStage - 1) {
         handleHarvest(plotIndex);
-      } else if (!existingCrop.isWatered) {
-        handleWater(plotIndex);
+      } else {
+        const currentStage = calculateGrowthStageWithWater(
+          existingCrop.cropType,
+          existingCrop.plantedAtMessage,
+          existingCrop.growthDuration,
+          existingCrop.wateredStages,
+          farmStatus?.messageCounter || 0
+        );
+        if (!existingCrop.wateredStages.includes(currentStage)) {
+          handleWater(plotIndex);
+        }
       }
     } else if (isTilled && selectedSeed && seedInventory[selectedSeed] > 0) {
       handlePlant(plotIndex, selectedSeed);
     } else if (!isTilled) {
       handleTill(plotIndex);
     }
-  }, [crops, tilledPlots, selectedSeed, seedInventory, haptics]);
+  }, [crops, tilledPlots, selectedSeed, seedInventory, haptics, farmStatus]);
 
   const handleTill = async (plotIndex: number) => {
     playSound('hoe');
