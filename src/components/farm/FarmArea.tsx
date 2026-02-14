@@ -8,6 +8,7 @@ interface FarmAreaProps {
   onTileTap: (plotIndex: number) => void;
   animatingPlots?: Map<number, 'till' | 'plant' | 'water'>;
   messageCounter: number;
+  unlockedPlots: Set<number>;
 }
 
 const GROWTH_STAGES: Record<string, number> = {
@@ -113,6 +114,7 @@ export function FarmArea({
   onTileTap,
   animatingPlots,
   messageCounter,
+  unlockedPlots,
 }: FarmAreaProps) {
   const cropMap = new Map<number, Crop>();
   crops.forEach(crop => {
@@ -169,6 +171,7 @@ export function FarmArea({
           currentStage={currentStage}
           onTap={() => onTileTap(index)}
           animating={animatingMap.get(index) ?? null}
+          isLocked={!unlockedPlots.has(index)}
         />
       );
     }

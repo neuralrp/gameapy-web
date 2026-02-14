@@ -46,6 +46,16 @@ const HARVEST_VALUES: Record<string, number> = {
   tomato: 20,
 };
 
+const FARM_LEVELS: Record<number, number> = {
+  1: 4,
+  2: 6,
+  3: 8,
+  4: 10,
+  5: 12,
+  6: 14,
+  7: 16,
+};
+
 interface SeedInventory {
   [key: string]: number;
 }
@@ -76,6 +86,8 @@ export function FarmScreen() {
     corn: 0,
     tomato: 1,
   });
+  const [unlockedPlots, setUnlockedPlots] = useState<Set<number>>(new Set());
+  const [showSeedHint, setShowSeedHint] = useState(false);
 
   useEffect(() => {
     refreshFarm();
@@ -109,6 +121,14 @@ export function FarmScreen() {
       const tilled = new Set<number>(farmStatus.tilledPlots || []);
       farmStatus.crops.forEach(c => tilled.add(c.plotIndex));
       setTilledPlots(tilled);
+
+      const farmLevel = farmStatus.farmLevel || 1;
+      const numUnlocked = FARM_LEVELS[farmLevel] || 4;
+      const unlocked = new Set<number>();
+      for (let i = 0; i < numUnlocked; i++) {
+        unlocked.add(i);
+      }
+      setUnlockedPlots(unlocked);
 
       if (!hasInitializedRef.current) {
         hasInitializedRef.current = true;
@@ -174,6 +194,15 @@ export function FarmScreen() {
   }
 
   const handleTileTap = useCallback((plotIndex: number) => {
+    const isLocked = !unlockedPlots.has(plotIndex);
+    
+    if (isLocked) {
+      haptics.heavy();
+      setShake(true);
+      setTimeout(() => setShake(false), 400);
+      return;
+    }
+    
     haptics.medium();
     const existingCrop = crops.find(c => c.plotIndex === plotIndex);
     const isTilled = tilledPlots.has(plotIndex);
@@ -196,10 +225,13 @@ export function FarmScreen() {
       }
     } else if (isTilled && selectedSeed && seedInventory[selectedSeed] > 0) {
       handlePlant(plotIndex, selectedSeed);
+    } else if (isTilled && !selectedSeed) {
+      setShowSeedHint(true);
+      setTimeout(() => setShowSeedHint(false), 1500);
     } else if (!isTilled) {
       handleTill(plotIndex);
     }
-  }, [crops, tilledPlots, selectedSeed, seedInventory, haptics, farmStatus]);
+  }, [crops, tilledPlots, selectedSeed, seedInventory, haptics, farmStatus, unlockedPlots]);
 
   const handleTill = async (plotIndex: number) => {
     playSound('hoe');
@@ -208,10 +240,20 @@ export function FarmScreen() {
     setTimeout(() => {
       setAnimatingPlots(prev => { const m = new Map(prev); m.delete(plotIndex); return m; });
     }, 400);
-    await tillPlot(plotIndex);
+    const success = await tillPlot(plotIndex);
+    if (!success) {
+      setTilledPlots(prev => {
+        const next = new Set(prev);
+        next.delete(plotIndex);
+        return next;
+      });
+      haptics.heavy();
+      setShake(true);
+      setTimeout(() => setShake(false), 400);
+    }
   };
 
-  const handlePlant = (plotIndex: number, seedType: string) => {
+  const handlePlant = async (plotIndex: number, seedType: string) => {
     if (seedInventory[seedType] <= 0) {
       haptics.heavy();
       setShake(true);
@@ -242,7 +284,19 @@ export function FarmScreen() {
     };
 
     setCrops(prev => [...prev, newCrop]);
-    plantCrop(seedType, plotIndex);
+    
+    const success = await plantCrop(seedType, plotIndex);
+    if (!success) {
+      setCrops(prev => prev.filter(c => c.plotIndex !== plotIndex));
+      setSeedInventory(prev => ({
+        ...prev,
+        [seedType]: prev[seedType] + 1,
+      }));
+      haptics.heavy();
+      setShake(true);
+      setTimeout(() => setShake(false), 400);
+      return;
+    }
     
     if (newCount <= 0) {
       setSelectedSeed(null);
@@ -380,6 +434,7 @@ export function FarmScreen() {
             onTileTap={handleTileTap}
             animatingPlots={animatingPlots}
             messageCounter={farmStatus?.messageCounter || 0}
+            unlockedPlots={unlockedPlots}
           />
         </div>
         {goldIncrements.map(inc => (
@@ -387,6 +442,15 @@ export function FarmScreen() {
             +{inc.amount} gold
           </div>
         ))}
+        {showSeedHint && (
+          <div className="seed-hint-overlay">Select a seed first</div>
+        )}
+      </div>
+
+      <div className="farm-toolbar-hint">
+        {selectedSeed 
+          ? `Tap tilled soil to plant ${selectedSeed}` 
+          : 'Tap a seed below to select it'}
       </div>
 
       <FarmToolbar

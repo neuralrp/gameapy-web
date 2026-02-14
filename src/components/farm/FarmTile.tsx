@@ -18,6 +18,7 @@ interface FarmTileProps {
   currentStage: number;
   onTap: () => void;
   animating?: 'till' | 'plant' | 'water' | null;
+  isLocked?: boolean;
 }
 
 const GROWTH_STAGES: Record<string, number> = {
@@ -48,6 +49,7 @@ export function FarmTile({
   currentStage,
   onTap,
   animating,
+  isLocked = false,
 }: FarmTileProps) {
   const isCurrentStageWatered = wateredStages.includes(currentStage);
   const hasCrop = crop && state !== 'grass' && state !== 'tilled';
@@ -55,7 +57,7 @@ export function FarmTile({
 
   return (
     <div 
-      className={`farm-tile ${animating ? `animating-${animating}` : ''} ${isMature ? 'mature' : ''}`} 
+      className={`farm-tile ${animating ? `animating-${animating}` : ''} ${isMature ? 'mature' : ''} ${isLocked ? 'locked' : ''}`} 
       onClick={onTap}
       data-state={state}
       data-index={plotIndex}
@@ -100,6 +102,12 @@ export function FarmTile({
       {state === 'mature' && (
         <div className="harvest-indicator">
           <span className="harvest-star">⭐</span>
+        </div>
+      )}
+      
+      {isLocked && (
+        <div className="locked-overlay">
+          <span className="lock-icon">🔒</span>
         </div>
       )}
     </div>
