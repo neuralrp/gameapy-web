@@ -71,10 +71,10 @@ export function FarmProvider({ children }: { children: ReactNode }) {
 
   const plantCrop = async (cropType: string, plotIndex: number): Promise<boolean> => {
     try {
-      const result = await (apiService as any).request('/api/v1/farm/plant', {
-        method: 'POST',
-        body: JSON.stringify({ crop_type: cropType, plot_index: plotIndex }),
-      });
+      const result = await (apiService as any).request(
+        `/api/v1/farm/plant?crop_type=${cropType}&plot_index=${plotIndex}`,
+        { method: 'POST' }
+      );
       if (result.success) {
         await refreshFarm();
         return true;
@@ -88,10 +88,10 @@ export function FarmProvider({ children }: { children: ReactNode }) {
 
   const harvestCrop = async (plotIndex: number): Promise<boolean> => {
     try {
-      const result = await (apiService as any).request('/api/v1/farm/harvest', {
-        method: 'POST',
-        body: JSON.stringify({ plot_index: plotIndex }),
-      });
+      const result = await (apiService as any).request(
+        `/api/v1/farm/harvest?plot_index=${plotIndex}`,
+        { method: 'POST' }
+      );
       if (result.success) {
         await refreshFarm();
         return true;
@@ -105,10 +105,10 @@ export function FarmProvider({ children }: { children: ReactNode }) {
 
   const buyAnimal = async (animalType: string, slotIndex: number): Promise<boolean> => {
     try {
-      const result = await (apiService as any).request('/api/v1/farm/buy-animal', {
-        method: 'POST',
-        body: JSON.stringify({ animal_type: animalType, slot_index: slotIndex }),
-      });
+      const result = await (apiService as any).request(
+        `/api/v1/farm/buy-animal?animal_type=${animalType}&slot_index=${slotIndex}`,
+        { method: 'POST' }
+      );
       if (result.success) {
         await refreshFarm();
         return true;
@@ -122,10 +122,10 @@ export function FarmProvider({ children }: { children: ReactNode }) {
 
   const harvestAnimal = async (slotIndex: number): Promise<boolean> => {
     try {
-      const result = await (apiService as any).request('/api/v1/farm/harvest-animal', {
-        method: 'POST',
-        body: JSON.stringify({ slot_index: slotIndex }),
-      });
+      const result = await (apiService as any).request(
+        `/api/v1/farm/harvest-animal?slot_index=${slotIndex}`,
+        { method: 'POST' }
+      );
       if (result.success) {
         await refreshFarm();
         return true;
