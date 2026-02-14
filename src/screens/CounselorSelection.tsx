@@ -132,6 +132,21 @@ export function CounselorSelection() {
           })}
           <FarmEntryCard onClick={handleFarmClick} />
         </div>
+
+        <div className="mt-8 max-w-md mx-auto space-y-3 px-4">
+          <div className="p-3 bg-gba-ui/50 border border-gba-border rounded-lg">
+            <p className="text-sm text-gba-text">
+              <strong>Talk to an advisor</strong> by pressing them, or <strong>create your own</strong> by pressing the "+"!
+            </p>
+          </div>
+          <div className="p-3 bg-gba-ui/50 border border-gba-border rounded-lg">
+            <p className="text-sm text-gba-text">
+              <strong>Create or edit cards</strong> by pressing the
+              <span className="inline-flex items-center mx-1"><Layers className="w-4 h-4" /></span>
+              icon! This is how your advisor knows who you are.
+            </p>
+          </div>
+        </div>
       </div>
 
       <button

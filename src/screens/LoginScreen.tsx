@@ -7,7 +7,10 @@ import { Eye, EyeOff, User, Lock } from 'lucide-react';
 type Tab = 'login' | 'register';
 
 export function LoginScreen() {
-  const [activeTab, setActiveTab] = useState<Tab>('login');
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const hasToken = localStorage.getItem('gameapy_auth_token');
+    return hasToken ? 'login' : 'register';
+  });
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -96,6 +99,12 @@ export function LoginScreen() {
           </button>
         </div>
         
+        {activeTab === 'login' && (
+          <div className="mb-4 p-2 bg-[#306850]/10 border border-[#306850]/30 rounded text-center text-sm text-[#306850]">
+            New user? Click the <strong>Register</strong> tab above to create your account.
+          </div>
+        )}
+        
         {error && (
           <div className="mb-4 p-3 bg-red-100 border border-red-300 rounded text-red-700 text-sm">
             {error}
@@ -172,10 +181,10 @@ export function LoginScreen() {
           </button>
         </form>
         
-        <p className="mt-6 text-center text-sm text-[#483018]/70">
+        <p className="mt-6 text-center text-sm text-[#483018]">
           {activeTab === 'login' 
-            ? "Don't have an account? Switch to Register."
-            : "Already have an account? Switch to Login."
+            ? <>New to Gameapy? Click <span className="font-bold text-[#306850]">Register</span> above to create an account.</>
+            : <>Have an account? Click <span className="font-bold text-[#306850]">Login</span> above.</>
           }
         </p>
       </div>
