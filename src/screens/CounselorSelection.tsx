@@ -7,6 +7,9 @@ import type { Counselor } from '../types/counselor';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
 import { FarmEntryCard } from '../components/farm/FarmEntryCard';
+import { HeartRating } from '../components/ui/HeartRating';
+
+type FriendshipMap = Record<number, number>;
 
 export function CounselorSelection() {
   const { setCounselor, setShowInventoryFullScreen, logout } = useApp();
@@ -14,16 +17,26 @@ export function CounselorSelection() {
 
   const [selectedCounselor, setSelectedCounselor] = useState<Counselor | null>(null);
   const [counselors, setCounselors] = useState<Counselor[]>([]);
+  const [friendshipLevels, setFriendshipLevels] = useState<FriendshipMap>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchCounselors = async () => {
+    const fetchData = async () => {
       try {
         setIsLoading(true);
         setError(null);
         const loadedCounselors = await apiService.getCounselors();
         setCounselors(loadedCounselors);
+        
+        const friendshipResponse = await apiService.getAllFriendshipLevels();
+        if (friendshipResponse.success && friendshipResponse.data?.friendships) {
+          const levelMap: FriendshipMap = {};
+          friendshipResponse.data.friendships.forEach((f) => {
+            levelMap[f.counselor_id] = f.level;
+          });
+          setFriendshipLevels(levelMap);
+        }
       } catch (err) {
         console.error('Error loading counselors:', err);
         setError(err instanceof Error ? err.message : 'Failed to load counselors');
@@ -32,7 +45,7 @@ export function CounselorSelection() {
       }
     };
 
-    fetchCounselors();
+    fetchData();
   }, []);
 
   const handleSelect = (counselor: Counselor) => {
@@ -123,9 +136,14 @@ export function CounselorSelection() {
                 aria-label={`Select ${counselor.name}`}
               >
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 rounded-b-md">
-                  <span className="text-white font-bold text-xs drop-shadow-md">
+                  <span className="text-white font-bold text-xs drop-shadow-md block">
                     {truncateName(counselor.name)}
                   </span>
+                  <HeartRating 
+                    level={friendshipLevels[counselor.id] || 0} 
+                    size="sm" 
+                    className="mt-1 justify-center"
+                  />
                 </div>
               </button>
             );

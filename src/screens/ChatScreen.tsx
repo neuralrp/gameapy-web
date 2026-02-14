@@ -17,6 +17,7 @@ export function ChatScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [showCounselorInfo, setShowCounselorInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,6 +31,14 @@ export function ChatScreen() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+    }
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -39,6 +48,9 @@ export function ChatScreen() {
       if (sessionId && sessionMessageCount > 0) {
         apiService.analyzeSession(sessionId).catch(err => {
           console.error('Background session analysis failed:', err);
+        });
+        apiService.analyzeSessionFriendship(sessionId).catch(err => {
+          console.error('Background friendship analysis failed:', err);
         });
       }
     };
@@ -317,15 +329,27 @@ export function ChatScreen() {
         }}
       >
         <div className="flex gap-3 items-end">
-          <input
-            type="text"
+          <textarea
+            ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            onChange={(e) => {
+              setInput(e.target.value);
+              adjustTextareaHeight();
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+                if (textareaRef.current) {
+                  textareaRef.current.style.height = 'auto';
+                }
+              }
+            }}
             placeholder="Type your message..."
-            className="input-bubble flex-1 px-4 py-3 font-sans bg-white min-h-[44px]"
+            className="input-bubble flex-1 px-4 py-3 font-sans bg-white min-h-[44px] resize-none overflow-hidden"
             style={{ color: '#000000' }}
             disabled={isLoading || !sessionId}
+            rows={1}
           />
           <button
             onClick={handleSend}

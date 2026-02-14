@@ -449,6 +449,47 @@ export class ApiService {
   async checkMarinaUnlock() {
     return this.request('/farm/check-marina');
   }
+
+  // Friendship Level Methods
+  async getFriendshipLevel(counselorId: number): Promise<APIResponse<{
+    counselor_id: number;
+    level: number;
+    points: number;
+    counselor_name: string | null;
+    last_interaction: string | null;
+    exists: boolean;
+  }>> {
+    return this.request(`/api/v1/friendship/${counselorId}`);
+  }
+
+  async getAllFriendshipLevels(): Promise<APIResponse<{
+    friendships: Array<{
+      id: number;
+      client_id: number;
+      counselor_id: number;
+      level: number;
+      points: number;
+      counselor_name: string;
+      last_interaction: string | null;
+    }>;
+  }>> {
+    return this.request('/api/v1/friendship/');
+  }
+
+  async analyzeSessionFriendship(sessionId: number): Promise<APIResponse<{
+    points_delta: number;
+    new_level: number;
+    new_points: number;
+    reasoning?: string;
+    signals_detected?: string[];
+    friendship_tier?: string;
+    already_analyzed?: boolean;
+  }>> {
+    return this.request('/api/v1/friendship/analyze-session', {
+      method: 'POST',
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+  }
 }
 
 export const apiService = new ApiService();
