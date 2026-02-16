@@ -70,19 +70,19 @@ export function LoginScreen() {
   };
   
   return (
-    <div className="min-h-screen bg-[#E8D0A0] flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-[#F8F0D8] rounded-lg shadow-lg p-8">
-        <h1 className="text-3xl font-retro text-center text-[#483018] mb-8">
+    <div className="min-h-screen bg-[#F5F1E8] flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-[#FAF8F3] rounded-lg shadow-lg p-8">
+        <h1 className="text-3xl font-retro text-center text-[#3D3426] mb-8">
           Gameapy
         </h1>
         
-        <div className="flex mb-6 border-b-2 border-[#D8D0B8]">
+        <div className="flex mb-6 border-b-2 border-[#E8E0D4]">
           <button
             onClick={() => setActiveTab('login')}
             className={`flex-1 py-3 font-retro text-lg ${
               activeTab === 'login'
-                ? 'text-[#306850] border-b-4 border-[#306850]'
-                : 'text-[#483018]/60'
+                ? 'text-[#5C6B4A] border-b-4 border-[#5C6B4A]'
+                : 'text-[#3D3426]/60'
             }`}
           >
             Login
@@ -91,8 +91,8 @@ export function LoginScreen() {
             onClick={() => setActiveTab('register')}
             className={`flex-1 py-3 font-retro text-lg ${
               activeTab === 'register'
-                ? 'text-[#306850] border-b-4 border-[#306850]'
-                : 'text-[#483018]/60'
+                ? 'text-[#5C6B4A] border-b-4 border-[#5C6B4A]'
+                : 'text-[#3D3426]/60'
             }`}
           >
             Register
@@ -100,7 +100,7 @@ export function LoginScreen() {
         </div>
         
         {activeTab === 'login' && (
-          <div className="mb-4 p-2 bg-[#306850]/10 border border-[#306850]/30 rounded text-center text-sm text-[#306850]">
+          <div className="mb-4 p-2 bg-[#5C6B4A]/10 border border-[#5C6B4A]/30 rounded text-center text-sm text-[#5C6B4A]">
             New user? Click the <strong>Register</strong> tab above to create your account.
           </div>
         )}
@@ -114,7 +114,7 @@ export function LoginScreen() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {activeTab === 'register' && (
             <div>
-              <label className="block text-sm font-medium text-[#483018] mb-1">
+              <label className="block text-sm font-medium text-[#3D3426] mb-1">
                 Display Name (optional)
               </label>
               <input
@@ -122,47 +122,47 @@ export function LoginScreen() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="How should we call you?"
-                className="w-full px-4 py-3 rounded border-2 border-[#D8D0B8] bg-white text-[#483018] focus:border-[#306850] focus:outline-none"
+                className="w-full px-4 py-3 rounded border-2 border-[#E8E0D4] bg-white text-[#3D3426] focus:border-[#5C6B4A] focus:outline-none"
               />
             </div>
           )}
           
           <div>
-            <label className="block text-sm font-medium text-[#483018] mb-1">
+            <label className="block text-sm font-medium text-[#3D3426] mb-1">
               Username
             </label>
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#483018]/50" />
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3D3426]/50" />
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Choose a username"
-                className="w-full pl-10 pr-4 py-3 rounded border-2 border-[#D8D0B8] bg-white text-[#483018] focus:border-[#306850] focus:outline-none"
+                className="w-full pl-10 pr-4 py-3 rounded border-2 border-[#E8E0D4] bg-white text-[#3D3426] focus:border-[#5C6B4A] focus:outline-none"
                 required
               />
             </div>
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-[#483018] mb-1">
+            <label className="block text-sm font-medium text-[#3D3426] mb-1">
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#483018]/50" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#3D3426]/50" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={activeTab === 'register' ? 'Min 6 characters' : 'Enter password'}
-                className="w-full pl-10 pr-12 py-3 rounded border-2 border-[#D8D0B8] bg-white text-[#483018] focus:border-[#306850] focus:outline-none"
+                className="w-full pl-10 pr-12 py-3 rounded border-2 border-[#E8E0D4] bg-white text-[#3D3426] focus:border-[#5C6B4A] focus:outline-none"
                 required
                 minLength={activeTab === 'register' ? 6 : undefined}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#483018]/50 hover:text-[#483018]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#3D3426]/50 hover:text-[#3D3426]"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -172,7 +172,7 @@ export function LoginScreen() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 bg-[#306850] text-[#F8F0D8] font-retro text-lg rounded hover:bg-[#204030] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-3 bg-[#5C6B4A] text-[#FAF8F3] font-retro text-lg rounded hover:bg-[#4A5A3A] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {loading 
               ? (activeTab === 'login' ? 'Logging in...' : 'Creating account...')
@@ -181,10 +181,10 @@ export function LoginScreen() {
           </button>
         </form>
         
-        <p className="mt-6 text-center text-sm text-[#483018]">
+        <p className="mt-6 text-center text-sm text-[#3D3426]">
           {activeTab === 'login' 
-            ? <>New to Gameapy? Click <span className="font-bold text-[#306850]">Register</span> above to create an account.</>
-            : <>Have an account? Click <span className="font-bold text-[#306850]">Login</span> above.</>
+            ? <>New to Gameapy? Click <span className="font-bold text-[#5C6B4A]">Register</span> above to create an account.</>
+            : <>Have an account? Click <span className="font-bold text-[#5C6B4A]">Login</span> above.</>
           }
         </p>
       </div>

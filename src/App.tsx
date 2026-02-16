@@ -23,8 +23,8 @@ function AppContent() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#E8D0A0]">
-        <div className="text-[#483018] font-retro text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-[#F5F1E8]">
+        <div className="text-[#3D3426] font-retro text-xl">Loading...</div>
       </div>
     );
   }

@@ -84,7 +84,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  const counselorColor = counselor?.visuals.selectionCard.backgroundColor || '#78C0D8';
+  const counselorColor = counselor?.visuals.selectionCard.backgroundColor || '#8B7355';
 
   useEffect(() => {
     loadCards();

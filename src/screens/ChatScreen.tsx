@@ -186,8 +186,8 @@ export function ChatScreen() {
     );
   }
 
-  const counselorColor = counselor?.visuals.selectionCard.backgroundColor || '#E8D0A0';
-  const counselorTextColor = counselor?.visuals.textColor || '#483018';
+  const counselorColor = counselor?.visuals.selectionCard.backgroundColor || '#F5F1E8';
+  const counselorTextColor = counselor?.visuals.textColor || '#3D3426';
   const backdrop = counselor?.visuals.chatBackdrop;
   const chatTextColor = backdrop?.textColor || counselorTextColor;
 
@@ -356,7 +356,7 @@ export function ChatScreen() {
             disabled={!input.trim() || isLoading || !sessionId}
             className="send-button min-h-[44px] min-w-[44px]"
             style={{
-              backgroundColor: `${counselor?.visuals.borderColor || '#306850'} !important`
+              backgroundColor: `${counselor?.visuals.borderColor || '#5C6B4A'} !important`
             }}
             aria-label="Send message"
           >

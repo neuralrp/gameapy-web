@@ -129,11 +129,13 @@ export function CounselorSelection() {
 
       <div
         className={`
-          fixed top-0 right-0 h-full bg-gba-ui/95 backdrop-blur-sm border-l-2 border-gba-border
+          fixed top-0 right-0 h-full border-l-2 border-gba-border
+          bg-cover bg-center
           transition-transform duration-300 ease-in-out z-40
           w-[280px] sm:translate-x-0
           ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}
         `}
+        style={{ backgroundImage: "url('/panel-bg.png')" }}
       >
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between p-3 border-b-2 border-gba-border">

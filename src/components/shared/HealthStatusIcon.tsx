@@ -9,18 +9,18 @@ export function HealthStatusIcon({ onClick, className = '' }: HealthStatusIconPr
   const { healthStatus, isCheckingHealth, consecutiveHealthFailures } = useApp();
 
   const getStatusColor = () => {
-    if (isCheckingHealth) return '#F8D878';
-    if (!healthStatus) return '#D8D0B8';
+    if (isCheckingHealth) return '#C9A86C';
+    if (!healthStatus) return '#C4BCB0';
 
     switch (healthStatus.status) {
       case 'healthy':
-        return '#88C070';
+        return '#7A8B6E';
       case 'degraded':
-        return '#F8D878';
+        return '#C9A86C';
       case 'down':
-        return '#F85858';
+        return '#A65D57';
       default:
-        return '#D8D0B8';
+        return '#C4BCB0';
     }
   };
 

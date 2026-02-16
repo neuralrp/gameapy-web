@@ -16,7 +16,7 @@ interface HarvestParticlesProps {
   onComplete: () => void;
 }
 
-const COLORS = ['#FFD700', '#FFA500', '#FF6B6B', '#4CAF50', '#8BC34A'];
+const COLORS = ['#C9A86C', '#8B7355', '#A65D57', '#7A8B6E', '#5C6B4A'];
 
 export function HarvestParticles({ x, y, onComplete }: HarvestParticlesProps) {
   const [particles, setParticles] = useState<Particle[]>([]);
