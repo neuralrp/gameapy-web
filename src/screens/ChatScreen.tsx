@@ -45,7 +45,7 @@ export function ChatScreen() {
 
   useEffect(() => {
     return () => {
-      if (sessionId && sessionMessageCount > 0) {
+      if (sessionId && sessionMessageCount >= 10) {
         apiService.analyzeSession(sessionId).catch(err => {
           console.error('Background session analysis failed:', err);
         });
@@ -59,19 +59,6 @@ export function ChatScreen() {
   const handleBack = () => {
     resetSessionMessageCount();
     setCounselor(null);
-  };
-
-  const triggerCardAnalysis = async () => {
-    if (!sessionId) return;
-
-    try {
-      const response = await apiService.analyzeSession(sessionId);
-      if (response.success && response.data) {
-        showToast({ message: `✅ ${response.data.cards_updated} cards updated`, type: 'success' });
-      }
-    } catch (err) {
-      console.error('Card analysis failed:', err);
-    }
   };
 
   const handleSend = async () => {
@@ -154,9 +141,6 @@ export function ChatScreen() {
               });
             }
 
-            if (sessionMessageCount > 0 && (sessionMessageCount + 1) % 5 === 0) {
-              triggerCardAnalysis();
-            }
           } else if (chunk.type === 'error') {
             throw new Error(chunk.error || 'Stream error occurred');
           }
