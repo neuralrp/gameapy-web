@@ -175,7 +175,7 @@ export function CounselorSelection() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-3">
-            <h2 className="text-lg font-bold text-gba-text mb-3">Choose an Advisor</h2>
+            <h2 className="text-lg font-bold text-gba-ui mb-3">Choose an Advisor</h2>
             <div className="space-y-2">
               {counselors.map((counselor) => {
                 const imageUrl = counselor.visuals.selectionCard.image;

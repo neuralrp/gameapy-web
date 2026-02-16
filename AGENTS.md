@@ -197,7 +197,7 @@ After completing any phase:
 
 ```
 Backend: Python 3.11+, FastAPI
-Database: SQLite (keyword-only search, no embeddings)
+Database: PostgreSQL (keyword-only search, no embeddings)
 LLM: OpenRouter API (Claude, GPT, etc.)
 
 Frontend (Web MVP): React 19.2.0+, Vite 7.2.4+, TypeScript 5.9.3+, Tailwind CSS 4.1.18+
@@ -217,7 +217,7 @@ FastAPI Backend
     ├─ Chat API (/api/v1/chat/*)
     └─ Session Analyzer (/api/v1/sessions/{id}/analyze)
     ↓
-SQLite Database
+PostgreSQL Database
     ├─ self_cards (one per client)
     ├─ character_cards (people in user's life)
     ├─ world_events (life milestones, NeuralRP-style)
@@ -506,7 +506,7 @@ HTTPS API calls
     ↓
 gameapy-backend-production.up.railway.app (Railway - FastAPI Backend)
     ↓
-SQLite Database
+PostgreSQL Database
 ```
 
 ### Vercel Configuration
