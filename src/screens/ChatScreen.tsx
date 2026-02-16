@@ -225,15 +225,13 @@ export function ChatScreen() {
       <header
         className="flex items-center justify-between px-4 py-5 border-b-2 border-gba-border flex-shrink-0"
         style={{
-          backgroundImage: backdrop?.backgroundImage
-            ? `url('${backdrop.backgroundImage}')`
-            : (backdrop?.type === 'pattern' && backdrop.pattern
-              ? `${backdrop.gradient}, var(--pattern-${backdrop.pattern})`
-              : (backdrop?.gradient || counselorColor)),
+          backgroundImage: backdrop?.type === 'pattern' && backdrop.pattern
+            ? `${backdrop.gradient}, var(--pattern-${backdrop.pattern})`
+            : (backdrop?.gradient || counselorColor),
           backgroundSize: 'cover',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
-          backgroundBlendMode: backdrop?.type === 'pattern' && !backdrop?.backgroundImage ? 'overlay' : undefined,
+          backgroundBlendMode: backdrop?.type === 'pattern' ? 'overlay' : undefined,
           color: chatTextColor
         }}
       >
@@ -271,7 +269,9 @@ export function ChatScreen() {
       <main
         className="flex-1 flex flex-col p-4 overflow-y-auto"
         style={{
-          backgroundImage: backdrop?.gradient || counselorColor,
+          backgroundImage: backdrop?.backgroundImage
+            ? `url('${backdrop.backgroundImage}')`
+            : (backdrop?.gradient || counselorColor),
           backgroundSize: 'cover',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center'
