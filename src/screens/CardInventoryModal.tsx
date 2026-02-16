@@ -27,9 +27,8 @@ function getCardFields(card: Card): Array<{ label: string; value: string; key: s
 
   if (card.card_type === 'world') {
     fields.push({ label: 'Title', value: payload.title || '', key: 'title' });
-    if (payload.event_type) fields.push({ label: 'Event Type', value: payload.event_type, key: 'event_type' });
     if (payload.key_array && payload.key_array.length > 0) {
-      fields.push({ label: 'Key Points', value: payload.key_array.join(', '), key: 'key_array' });
+      fields.push({ label: 'Keywords', value: payload.key_array.join(', '), key: 'key_array' });
     }
     if (payload.is_canon_law !== undefined) fields.push({ label: 'Canon Law', value: payload.is_canon_law ? 'Yes' : 'No', key: 'is_canon_law' });
     if (payload.resolved !== undefined) fields.push({ label: 'Resolved', value: payload.resolved ? 'Yes' : 'No', key: 'resolved' });
@@ -193,7 +192,6 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
       return {
         title: payload.title || '',
         description: payload.description || '',
-        event_type: payload.event_type || '',
       };
     } else if (card.card_type === 'character') {
       return {
@@ -267,7 +265,6 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     if (cardType === 'world') {
       if (!form.title.trim()) errors.push('Title is required');
       if (form.title.length > 160) errors.push('Title must be 160 characters or less');
-      if (form.event_type.length > 200) errors.push('Event type must be 200 characters or less');
       if (!form.description.trim()) errors.push('Description is required');
       if (form.description.length > 8000) errors.push('Description must be 8000 characters or less');
     } else if (cardType === 'character') {
@@ -456,7 +453,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
 
   const getInitialCreateForm = (cardType: CardType): Record<string, string> => {
     if (cardType === 'world') {
-      return { title: '', description: '', event_type: '' };
+      return { title: '', description: '' };
     } else if (cardType === 'character') {
       return { name: '', relationship_type: '', relationship_label: '', personality: '' };
     } else {
@@ -668,7 +665,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                   style={{ background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)` }}
                 >
                   <Plus className="w-5 h-5 mr-2" />
-                  Create {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Card
+                  Create {activeTab === 'world' ? 'Universal' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Card
                 </button>
               )}
             </div>
@@ -897,39 +894,22 @@ function CardEditForm({
 
       <div className="card-detail-section">
         {card.card_type === 'world' && (
-          <>
-            <div className="mb-4">
-              <label className="card-detail-label">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={form.title || ''}
-                onChange={(e) => onChange('title', e.target.value)}
-                maxLength={160}
-                className="card-input"
-                placeholder="Event title..."
-              />
-              <div className="text-xs text-gray-400 text-right mt-1">
-                {form.title?.length || 0} / 160
-              </div>
+          <div className="mb-4">
+            <label className="card-detail-label">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.title || ''}
+              onChange={(e) => onChange('title', e.target.value)}
+              maxLength={160}
+              className="card-input"
+              placeholder="Create a card for anything..."
+            />
+            <div className="text-xs text-gray-400 text-right mt-1">
+              {form.title?.length || 0} / 160
             </div>
-
-            <div>
-              <label className="card-detail-label">Event Type</label>
-              <input
-                type="text"
-                value={form.event_type || ''}
-                onChange={(e) => onChange('event_type', e.target.value)}
-                maxLength={200}
-                className="card-input"
-                placeholder="e.g., Career, Relationship, Personal..."
-              />
-              <div className="text-xs text-gray-400 text-right mt-1">
-                {form.event_type?.length || 0} / 200
-              </div>
-            </div>
-          </>
+          </div>
         )}
 
         {card.card_type === 'character' && (
@@ -1116,7 +1096,7 @@ function CardCreateForm({
               className={`segmented-control-item ${cardType === type ? 'active' : ''}`}
               style={cardType === type ? { color: counselorColor } : { color: '#6B7280' }}
             >
-              {type.charAt(0).toUpperCase() + type.slice(1)}
+              {type === 'world' ? 'Universal' : type.charAt(0).toUpperCase() + type.slice(1)}
             </button>
           ))}
         </div>
@@ -1124,39 +1104,22 @@ function CardCreateForm({
 
       <div className="card-detail-section">
         {cardType === 'world' && (
-          <>
-            <div className="mb-4">
-              <label className="card-detail-label">
-                Title <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={form.title || ''}
-                onChange={(e) => onChange('title', e.target.value)}
-                maxLength={160}
-                className="card-input"
-                placeholder="Event title..."
-              />
-              <div className="text-xs text-gray-400 text-right mt-1">
-                {form.title?.length || 0} / 160
-              </div>
+          <div className="mb-4">
+            <label className="card-detail-label">
+              Title <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={form.title || ''}
+              onChange={(e) => onChange('title', e.target.value)}
+              maxLength={160}
+              className="card-input"
+              placeholder="Create a card for anything..."
+            />
+            <div className="text-xs text-gray-400 text-right mt-1">
+              {form.title?.length || 0} / 160
             </div>
-
-            <div>
-              <label className="card-detail-label">Event Type</label>
-              <input
-                type="text"
-                value={form.event_type || ''}
-                onChange={(e) => onChange('event_type', e.target.value)}
-                maxLength={200}
-                className="card-input"
-                placeholder="e.g., Career, Relationship, Personal..."
-              />
-              <div className="text-xs text-gray-400 text-right mt-1">
-                {form.event_type?.length || 0} / 200
-              </div>
-            </div>
-          </>
+          </div>
         )}
 
         {cardType === 'character' && (

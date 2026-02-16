@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Plus, Layers, LogOut } from 'lucide-react';
+import { Plus, Layers, LogOut, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
 import type { Counselor } from '../types/counselor';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
-import { FarmEntryCard } from '../components/farm/FarmEntryCard';
+import { HelpModal } from '../components/shared/HelpModal';
+
 import { HeartRating } from '../components/ui/HeartRating';
 
 type FriendshipMap = Record<number, number>;
@@ -20,6 +21,7 @@ export function CounselorSelection() {
   const [friendshipLevels, setFriendshipLevels] = useState<FriendshipMap>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,10 +66,6 @@ export function CounselorSelection() {
   const handleLogout = () => {
     logout();
     navigate('/login');
-  };
-
-  const handleFarmClick = () => {
-    navigate('/farm');
   };
 
   const getCounselorColor = (counselor: Counselor) => {
@@ -148,7 +146,6 @@ export function CounselorSelection() {
               </button>
             );
           })}
-          <FarmEntryCard onClick={handleFarmClick} />
         </div>
 
         <div className="mt-8 max-w-md mx-auto space-y-3 px-4">
@@ -190,6 +187,17 @@ export function CounselorSelection() {
       >
         <LogOut className="w-6 h-6 text-gba-text" />
       </button>
+
+      <button
+        onClick={() => setShowHelp(true)}
+        className="absolute bottom-4 right-4 min-h-[44px] min-w-[44px] p-2 rounded-lg flex items-center justify-center hover:brightness-110 transition-all"
+        style={{ backgroundColor: '#3B82F6' }}
+        aria-label="Help"
+      >
+        <HelpCircle className="w-6 h-6 text-white" />
+      </button>
+
+      {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
   );
 }
