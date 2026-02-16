@@ -194,11 +194,17 @@ export function ChatScreen() {
   // Build backdrop styles
   const getBackdropStyle = (includePattern: boolean = false): React.CSSProperties => {
     const baseStyle: React.CSSProperties = {
-      backgroundImage: backdrop?.gradient || counselorColor,
       backgroundSize: 'cover',
       backgroundRepeat: 'no-repeat',
       backgroundPosition: 'center',
     };
+
+    if (backdrop?.backgroundImage) {
+      baseStyle.backgroundImage = `url('${backdrop.backgroundImage}')`;
+      return baseStyle;
+    }
+
+    baseStyle.backgroundImage = backdrop?.gradient || counselorColor;
 
     if (includePattern && backdrop?.type === 'pattern' && backdrop.pattern) {
       baseStyle.backgroundImage = `${backdrop.gradient}, var(--pattern-${backdrop.pattern})`;
@@ -219,13 +225,15 @@ export function ChatScreen() {
       <header
         className="flex items-center justify-between px-4 py-5 border-b-2 border-gba-border flex-shrink-0"
         style={{
-          backgroundImage: backdrop?.type === 'pattern' && backdrop.pattern
-            ? `${backdrop.gradient}, var(--pattern-${backdrop.pattern})`
-            : (backdrop?.gradient || counselorColor),
+          backgroundImage: backdrop?.backgroundImage
+            ? `url('${backdrop.backgroundImage}')`
+            : (backdrop?.type === 'pattern' && backdrop.pattern
+              ? `${backdrop.gradient}, var(--pattern-${backdrop.pattern})`
+              : (backdrop?.gradient || counselorColor)),
           backgroundSize: 'cover',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
-          backgroundBlendMode: backdrop?.type === 'pattern' ? 'overlay' : undefined,
+          backgroundBlendMode: backdrop?.type === 'pattern' && !backdrop?.backgroundImage ? 'overlay' : undefined,
           color: chatTextColor
         }}
       >
@@ -318,13 +326,15 @@ export function ChatScreen() {
       <footer
         className="p-4 border-t-2 border-gba-border flex-shrink-0"
         style={{
-          backgroundImage: backdrop?.type === 'pattern' && backdrop.pattern
-            ? `${backdrop.gradient}, var(--pattern-${backdrop.pattern})`
-            : (backdrop?.gradient || counselorColor),
+          backgroundImage: backdrop?.backgroundImage
+            ? `url('${backdrop.backgroundImage}')`
+            : (backdrop?.type === 'pattern' && backdrop.pattern
+              ? `${backdrop.gradient}, var(--pattern-${backdrop.pattern})`
+              : (backdrop?.gradient || counselorColor)),
           backgroundSize: 'cover',
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
-          backgroundBlendMode: backdrop?.type === 'pattern' ? 'overlay' : undefined,
+          backgroundBlendMode: backdrop?.type === 'pattern' && !backdrop?.backgroundImage ? 'overlay' : undefined,
           opacity: 0.95
         }}
       >

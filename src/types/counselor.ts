@@ -5,6 +5,7 @@ export interface ChatBackdrop {
   patternOpacity?: number;
   overlayColor?: string;
   textColor?: string;
+  backgroundImage?: string;
 }
 
 export interface Counselor {
