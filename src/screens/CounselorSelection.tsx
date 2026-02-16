@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Layers, LogOut, HelpCircle } from 'lucide-react';
+import { Plus, Layers, LogOut, HelpCircle, Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
@@ -7,8 +7,8 @@ import type { Counselor } from '../types/counselor';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
 import { HelpModal } from '../components/shared/HelpModal';
-
 import { HeartRating } from '../components/ui/HeartRating';
+import { VideoBackground } from '../components/ui/VideoBackground';
 
 type FriendshipMap = Record<number, number>;
 
@@ -22,6 +22,18 @@ export function CounselorSelection() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
+  const [isPanelOpen, setIsPanelOpen] = useState(true);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      if (window.innerWidth < 640) {
+        setIsPanelOpen(false);
+      }
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,7 +84,7 @@ export function CounselorSelection() {
     return counselor.visuals.selectionCard.backgroundColor;
   };
 
-  const truncateName = (name: string, maxLen: number = 15) =>
+  const truncateName = (name: string, maxLen: number = 18) =>
     name.length > maxLen ? name.slice(0, maxLen) + '…' : name;
 
   if (isLoading) {
@@ -102,100 +114,125 @@ export function CounselorSelection() {
   }
 
   return (
-    <div className="h-screen relative">
-      <div className="h-full overflow-y-auto p-4 pt-20 pb-8">
-        <div className="text-center mb-6 mt-4">
-          <h1 className="text-3xl font-bold text-gba-text mb-1">Gameapy</h1>
-          <p className="text-sm text-gba-text/70">AI that grows with you</p>
-        </div>
-        <div className="grid grid-cols-3 gap-3 max-w-2xl mx-auto">
-          {counselors.map((counselor) => {
-            const imageUrl = counselor.visuals.selectionCard.image;
-            const bgColor = getCounselorColor(counselor);
+    <div className="h-screen relative overflow-hidden">
+      <VideoBackground videoSrc="/homescreen-video.mp4" />
 
-            return (
+      {!isPanelOpen && (
+        <button
+          onClick={() => setIsPanelOpen(true)}
+          className="absolute top-4 right-4 z-50 min-h-[44px] min-w-[44px] p-2 bg-gba-ui/95 border-2 border-gba-border rounded-lg hover:bg-gba-ui transition-colors backdrop-blur-sm sm:hidden"
+          aria-label="Open menu"
+        >
+          <Menu className="w-6 h-6 text-gba-text" />
+        </button>
+      )}
+
+      <div
+        className={`
+          fixed top-0 right-0 h-full bg-gba-ui/95 backdrop-blur-sm border-l-2 border-gba-border
+          transition-transform duration-300 ease-in-out z-40
+          w-[280px] sm:translate-x-0
+          ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}
+        `}
+      >
+        <div className="flex flex-col h-full">
+          <div className="flex items-center justify-between p-3 border-b-2 border-gba-border">
+            <div className="flex gap-2">
               <button
-                key={counselor.id}
-                onClick={() => handleSelect(counselor)}
-                className={`
-                  relative aspect-square transition-all duration-200
-                  ${selectedCounselor?.id === counselor.id ? 'selected' : ''}
-                  ${imageUrl ? 'counselor-image' : ''}
-                  rounded-lg border-2 border-gba-border
-                  hover:scale-[1.02] active:scale-[0.98]
-                `}
-                style={{
-                  backgroundImage: imageUrl ? `url(${encodeURI(imageUrl)})` : undefined,
-                  backgroundColor: !imageUrl ? bgColor : undefined,
-                  backgroundPosition: 'center',
-                  backgroundRepeat: 'no-repeat',
-                  backgroundSize: 'cover'
-                }}
-                aria-label={`Select ${counselor.name}`}
+                onClick={handleCreateAdvisor}
+                className="min-h-[36px] min-w-[36px] p-2 bg-gba-grass border-2 border-gba-border rounded-lg flex items-center justify-center hover:bg-gba-grass/90 transition-colors"
+                aria-label="Create custom advisor"
               >
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2 rounded-b-md">
-                  <span className="text-white font-bold text-xs drop-shadow-md block">
-                    {truncateName(counselor.name)}
-                  </span>
-                  <HeartRating 
-                    level={friendshipLevels[counselor.id] || 0} 
-                    size="sm" 
-                    className="mt-1 justify-center"
-                  />
-                </div>
+                <Plus className="w-5 h-5 text-gba-text" />
               </button>
-            );
-          })}
-        </div>
 
-        <div className="mt-8 max-w-md mx-auto space-y-3 px-4">
-          <div className="p-3 bg-gba-ui/50 border border-gba-border rounded-lg">
-            <p className="text-sm text-gba-text">
-              <strong>Talk to an advisor</strong> by pressing them, or <strong>create your own</strong> by pressing the "+"!
-            </p>
+              <button
+                onClick={handleSettings}
+                className="min-h-[36px] min-w-[36px] p-2 bg-gba-bg border-2 border-gba-border rounded-lg hover:bg-gba-bg/90 transition-colors"
+                aria-label="View cards"
+              >
+                <Layers className="w-5 h-5 text-gba-text" />
+              </button>
+
+              <button
+                onClick={handleLogout}
+                className="min-h-[36px] min-w-[36px] p-2 bg-gba-bg border-2 border-gba-border rounded-lg hover:bg-gba-bg/90 transition-colors"
+                aria-label="Logout"
+              >
+                <LogOut className="w-5 h-5 text-gba-text" />
+              </button>
+            </div>
+
+            <button
+              onClick={() => setIsPanelOpen(false)}
+              className="min-h-[36px] min-w-[36px] p-2 bg-gba-bg border-2 border-gba-border rounded-lg hover:bg-gba-bg/90 transition-colors sm:hidden"
+              aria-label="Close menu"
+            >
+              <X className="w-5 h-5 text-gba-text" />
+            </button>
           </div>
-          <div className="p-3 bg-gba-ui/50 border border-gba-border rounded-lg">
-            <p className="text-sm text-gba-text">
-              <strong>Create or edit cards</strong> by pressing the
-              <span className="inline-flex items-center mx-1"><Layers className="w-4 h-4" /></span>
-              icon! This is how your advisor knows who you are.
-            </p>
+
+          <div className="flex-1 overflow-y-auto p-3">
+            <h2 className="text-lg font-bold text-gba-text mb-3">Choose an Advisor</h2>
+            <div className="space-y-2">
+              {counselors.map((counselor) => {
+                const imageUrl = counselor.visuals.selectionCard.image;
+                const bgColor = getCounselorColor(counselor);
+
+                return (
+                  <button
+                    key={counselor.id}
+                    onClick={() => handleSelect(counselor)}
+                    className={`
+                      w-full flex items-center gap-3 p-2 rounded-lg border-2 border-gba-border
+                      transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]
+                      ${selectedCounselor?.id === counselor.id ? 'ring-2 ring-gba-highlight border-gba-highlight' : ''}
+                    `}
+                    style={{ backgroundColor: bgColor }}
+                    aria-label={`Select ${counselor.name}`}
+                  >
+                    <div
+                      className="w-12 h-12 rounded-md flex-shrink-0 border border-gba-border bg-cover bg-center"
+                      style={{
+                        backgroundImage: imageUrl ? `url(${encodeURI(imageUrl)})` : undefined,
+                        backgroundColor: !imageUrl ? bgColor : undefined,
+                      }}
+                    />
+                    <div className="flex-1 text-left min-w-0">
+                      <span className="text-gba-text font-bold text-sm drop-shadow-md block truncate">
+                        {truncateName(counselor.name)}
+                      </span>
+                      <HeartRating
+                        level={friendshipLevels[counselor.id] || 0}
+                        size="sm"
+                        className="mt-0.5"
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="p-3 border-t-2 border-gba-border">
+            <button
+              onClick={() => setShowHelp(true)}
+              className="w-full min-h-[44px] p-2 bg-blue-500 border-2 border-blue-600 rounded-lg flex items-center justify-center gap-2 hover:brightness-110 transition-all"
+              aria-label="Help"
+            >
+              <HelpCircle className="w-5 h-5 text-white" />
+              <span className="text-white font-bold text-sm">Help</span>
+            </button>
           </div>
         </div>
       </div>
 
-      <button
-        onClick={handleCreateAdvisor}
-        className="absolute top-4 left-4 min-h-[44px] min-w-[44px] p-2 bg-gba-grass border-2 border-gba-border rounded-lg flex items-center justify-center hover:bg-gba-grass/90 transition-colors"
-        aria-label="Create custom advisor"
-      >
-        <Plus className="w-6 h-6 text-gba-text" />
-      </button>
-
-      <button
-        onClick={handleSettings}
-        className="absolute top-4 right-16 min-h-[44px] min-w-[44px] p-2 bg-gba-ui border-2 border-gba-border rounded-lg hover:bg-gba-ui/90 transition-colors"
-        aria-label="View cards"
-      >
-        <Layers className="w-6 h-6 text-gba-text" />
-      </button>
-
-      <button
-        onClick={handleLogout}
-        className="absolute top-4 right-4 min-h-[44px] min-w-[44px] p-2 bg-gba-ui border-2 border-gba-border rounded-lg hover:bg-gba-ui/90 transition-colors"
-        aria-label="Logout"
-      >
-        <LogOut className="w-6 h-6 text-gba-text" />
-      </button>
-
-      <button
-        onClick={() => setShowHelp(true)}
-        className="absolute bottom-4 right-4 min-h-[44px] min-w-[44px] p-2 rounded-lg flex items-center justify-center hover:brightness-110 transition-all"
-        style={{ backgroundColor: '#3B82F6' }}
-        aria-label="Help"
-      >
-        <HelpCircle className="w-6 h-6 text-white" />
-      </button>
+      {isPanelOpen && (
+        <div
+          className="fixed inset-0 bg-black/30 z-30 sm:hidden"
+          onClick={() => setIsPanelOpen(false)}
+        />
+      )}
 
       {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
     </div>
