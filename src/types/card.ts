@@ -47,3 +47,68 @@ export interface WorldCard extends BaseCard {
 export type Card = SelfCard | CharacterCard | WorldCard;
 
 export type UnifiedCard = Card;
+
+// ============================================================
+// Phase 2: Table and Hand Types
+// ============================================================
+
+export type TableSlotPosition = 'center' | 'far_left' | 'far_right';
+export type ConversationMode = 'advisory' | 'roleplay' | 'three_way';
+export type ExtendedCardType = CardType | 'universal' | 'personality';
+
+export interface UniversalCard {
+  id: number;
+  entity_id: string;
+  title: string;
+  description?: string;
+  category: string;
+  card_json?: Record<string, any>;
+  is_official: boolean;
+  created_by_client_id?: number;
+  image_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TableSlotCard {
+  id: number;
+  session_id: number;
+  slot_position: TableSlotPosition;
+  card_type: ExtendedCardType;
+  card_id: number;
+  played_at: string;
+  card_data?: Record<string, any>;
+}
+
+export interface TableState {
+  slots: TableSlotCard[];
+  conversation_mode: ConversationMode;
+}
+
+export interface HandCard {
+  id: number;
+  client_id: number;
+  card_type: ExtendedCardType;
+  card_id: number;
+  position: number;
+  added_at: string;
+  card_data?: Record<string, any>;
+}
+
+export interface TableSlots {
+  center: TableSlotCard | null;
+  far_left: TableSlotCard | null;
+  far_right: TableSlotCard | null;
+}
+
+export const EMPTY_TABLE_SLOTS: TableSlots = {
+  center: null,
+  far_left: null,
+  far_right: null,
+};
+
+export const SLOT_LABELS: Record<TableSlotPosition, string> = {
+  center: 'Topic',
+  far_left: 'Conversation Partner',
+  far_right: 'Second Partner',
+};

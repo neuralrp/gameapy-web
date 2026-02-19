@@ -8,7 +8,7 @@ export interface ChatBackdrop {
   backgroundImage?: string;
 }
 
-export interface Counselor {
+export interface Personality {
   id: number;
   name: string;
   description: string;
@@ -34,13 +34,15 @@ export interface Counselor {
       borderColor: string;
       textColor: string;
       image?: string;
+      badge?: string;
+      badgeColor?: string;
     };
     chatBackdrop: ChatBackdrop;
     icon?: string;
   };
 }
 
-export type CounselorFromDB = {
+export type PersonalityFromDB = {
   id: number;
   name: string;
   specialization: string;
@@ -82,6 +84,8 @@ export type CounselorFromDB = {
           borderColor: string;
           textColor: string;
           image?: string;
+          badge?: string;
+          badgeColor?: string;
         };
         chatBackdrop: {
           type: 'gradient' | 'pattern';
@@ -119,7 +123,7 @@ export interface CreateAdvisorResponse {
   message: string;
   data?: {
     counselor_id: number;
-    persona: CounselorFromDB['profile'];
+    persona: PersonalityFromDB['profile'];
   };
 }
 
@@ -129,5 +133,9 @@ export interface CustomAdvisor {
   specialty: string;
   description: string;
   created_at: string;
-  profile?: CounselorFromDB['profile'];
+  profile?: PersonalityFromDB['profile'];
 }
+
+// Legacy type aliases for backward compatibility
+export type Counselor = Personality;
+export type CounselorFromDB = PersonalityFromDB;

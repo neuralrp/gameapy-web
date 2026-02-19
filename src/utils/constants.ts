@@ -1,7 +1,9 @@
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 export const API_ENDPOINTS = {
-  counselors: '/api/v1/counselors',
+  personalities: '/api/v1/personalities/',
+  defaultPersonality: '/api/v1/personalities/default',
+  counselors: '/api/v1/personalities/',
   sessions: '/api/v1/sessions',
   chat: '/api/v1/chat/chat',
   cards: '/api/v1/cards',

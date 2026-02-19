@@ -8,20 +8,23 @@ import type {
   CardGenerateResponse,
   CardSaveRequest,
   StreamChunk,
+  SessionInfo,
 } from '../types/api';
-import type { CounselorFromDB } from '../types/counselor';
+import type { PersonalityFromDB, Personality } from '../types/personality';
 import type { Card } from '../types/card';
-import type { Counselor } from '../types/counselor';
 import type { HealthCheck } from '../types/health';
+import type { Message } from '../types/message';
 
-function transformCounselorFromDB(dbCounselor: CounselorFromDB): Counselor {
-  const data = dbCounselor.profile.data;
+function transformPersonalityFromDB(dbPersonality: PersonalityFromDB): Personality {
+  const data = dbPersonality.profile.data;
   
   return {
-    id: dbCounselor.id,
+    id: dbPersonality.id,
     name: data.name,
     description: data.your_vibe,
     specialty: data.who_you_are,
+    is_custom: dbPersonality.is_custom,
+    is_default: dbPersonality.is_default,
     visuals: data.visuals || {
       primaryColor: '#F8F0D8',
       secondaryColor: '#E8E0C8',
@@ -147,17 +150,40 @@ export class ApiService {
     return this.request('/auth/me');
   }
 
-  async getCounselors(): Promise<Counselor[]> {
-    const dbCounselors = await this.request<CounselorFromDB[]>(API_ENDPOINTS.counselors);
-    return dbCounselors.map(transformCounselorFromDB);
+  async getPersonalities(): Promise<Personality[]> {
+    const response = await this.request<APIResponse<PersonalityFromDB[]>>(API_ENDPOINTS.personalities);
+    if (response.success && response.data) {
+      return response.data.map(transformPersonalityFromDB);
+    }
+    return [];
+  }
+
+  async getDefaultPersonality(): Promise<Personality | null> {
+    const response = await this.request<APIResponse<PersonalityFromDB>>(API_ENDPOINTS.defaultPersonality);
+    if (response.success && response.data) {
+      return transformPersonalityFromDB(response.data);
+    }
+    return null;
+  }
+
+  async getPersonality(personalityId: number): Promise<Personality | null> {
+    const response = await this.request<APIResponse<PersonalityFromDB>>(`${API_ENDPOINTS.personalities}${personalityId}`);
+    if (response.success && response.data) {
+      return transformPersonalityFromDB(response.data);
+    }
+    return null;
+  }
+
+  async getCounselors(): Promise<Personality[]> {
+    return this.getPersonalities();
   }
 
   async createCustomAdvisor(
     name: string,
     specialty: string,
     vibe: string
-  ): Promise<import('../types/counselor').CreateAdvisorResponse> {
-    return this.request<import('../types/counselor').CreateAdvisorResponse>(
+  ): Promise<import('../types/personality').CreateAdvisorResponse> {
+    return this.request<import('../types/personality').CreateAdvisorResponse>(
       '/api/v1/counselors/custom/create',
       {
         method: 'POST',
@@ -166,15 +192,15 @@ export class ApiService {
     );
   }
 
-  async getCustomAdvisors(): Promise<import('../types/counselor').CustomAdvisor[]> {
-    return this.request<import('../types/counselor').CustomAdvisor[]>(
+  async getCustomAdvisors(): Promise<import('../types/personality').CustomAdvisor[]> {
+    return this.request<import('../types/personality').CustomAdvisor[]>(
       '/api/v1/counselors/custom/list'
     );
   }
 
   async updateCustomAdvisor(
     counselorId: number,
-    personaData: CounselorFromDB['profile']
+    personaData: PersonalityFromDB['profile']
   ): Promise<APIResponse<void>> {
     return this.request<APIResponse<void>>(
       '/api/v1/counselors/custom/update',
@@ -200,6 +226,26 @@ export class ApiService {
       method: 'POST',
       body: JSON.stringify({ counselor_id: data.counselor_id }),
     });
+  }
+
+  async getAllSessions(limit: number = 50): Promise<APIResponse<{ sessions: SessionInfo[] }>> {
+    return this.request(`/api/v1/sessions?limit=${limit}`);
+  }
+
+  async getSession(sessionId: number): Promise<APIResponse<{ session: SessionInfo }>> {
+    return this.request(`/api/v1/sessions/${sessionId}`);
+  }
+
+  async getSessionMessages(sessionId: number, limit: number = 50): Promise<Message[]> {
+    return this.request(`/api/v1/sessions/${sessionId}/messages?limit=${limit}`);
+  }
+
+  async summarizeSession(sessionId: number): Promise<APIResponse<{ summary: string; cached: boolean }>> {
+    return this.request(`/api/v1/sessions/${sessionId}/summarize`, { method: 'POST' });
+  }
+
+  async endSession(sessionId: number): Promise<APIResponse<{ message: string }>> {
+    return this.request(`/api/v1/sessions/${sessionId}/end`, { method: 'POST' });
   }
 
   async sendMessage(data: ChatRequest): Promise<Response> {
@@ -489,6 +535,280 @@ export class ApiService {
       method: 'POST',
       body: JSON.stringify({ session_id: sessionId }),
     });
+  }
+
+  // ============================================================
+  // Table & Hand API
+  // ============================================================
+
+  async playCardToTable(
+    sessionId: number,
+    slotPosition: string,
+    cardType: string,
+    cardId: number
+  ): Promise<APIResponse<any>> {
+    return this.request('/api/v1/table/play', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id: sessionId,
+        slot_position: slotPosition,
+        card_type: cardType,
+        card_id: cardId,
+      }),
+    });
+  }
+
+  async removeCardFromTable(
+    sessionId: number,
+    slotPosition: string
+  ): Promise<APIResponse<any>> {
+    return this.request('/api/v1/table/remove', {
+      method: 'POST',
+      body: JSON.stringify({
+        session_id: sessionId,
+        slot_position: slotPosition,
+      }),
+    });
+  }
+
+  async clearTable(sessionId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/table/clear?session_id=${sessionId}`, {
+      method: 'POST',
+    });
+  }
+
+  async getTableState(sessionId: number): Promise<APIResponse<{
+    slots: any[];
+    conversation_mode: string;
+  }>> {
+    return this.request(`/api/v1/table/state/${sessionId}`);
+  }
+
+  async getHand(): Promise<APIResponse<{ cards: any[] }>> {
+    return this.request('/api/v1/table/hand');
+  }
+
+  async addCardToHand(
+    cardType: string,
+    cardId: number,
+    position: number = 0
+  ): Promise<APIResponse<any>> {
+    return this.request(
+      `/api/v1/table/hand/add?card_type=${cardType}&card_id=${cardId}&position=${position}`,
+      { method: 'POST' }
+    );
+  }
+
+  async removeCardFromHand(
+    cardType: string,
+    cardId: number
+  ): Promise<APIResponse<any>> {
+    return this.request(
+      `/api/v1/table/hand/remove?card_type=${cardType}&card_id=${cardId}`,
+      { method: 'POST' }
+    );
+  }
+
+  async clearHand(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/table/hand/clear', { method: 'POST' });
+  }
+
+  // ============================================================
+  // Universal Cards API
+  // ============================================================
+
+  async getUniversalCards(category?: string): Promise<APIResponse<any[]>> {
+    const url = category
+      ? `/api/v1/universal-cards?category=${category}`
+      : '/api/v1/universal-cards';
+    return this.request(url);
+  }
+
+  async getUniversalCard(cardId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/universal-cards/${cardId}`);
+  }
+
+  async getUniversalCardCategories(): Promise<APIResponse<string[]>> {
+    return this.request('/api/v1/universal-cards/categories');
+  }
+
+  async createUniversalCard(data: {
+    title: string;
+    description?: string;
+    category?: string;
+    card_json?: any;
+    image_url?: string;
+  }): Promise<APIResponse<any>> {
+    return this.request('/api/v1/universal-cards', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ============================================================
+  // Friends API
+  // ============================================================
+
+  async getFriends(): Promise<APIResponse<any[]>> {
+    return this.request('/api/v1/friends/');
+  }
+
+  async sendFriendRequest(username: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/friends/request/${encodeURIComponent(username)}`, {
+      method: 'POST',
+    });
+  }
+
+  async acceptFriendRequest(requesterId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/friends/accept/${requesterId}`, {
+      method: 'POST',
+    });
+  }
+
+  async declineFriendRequest(requesterId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/friends/decline/${requesterId}`, {
+      method: 'POST',
+    });
+  }
+
+  async removeFriend(friendId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/friends/${friendId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async getPendingFriendRequests(): Promise<APIResponse<any[]>> {
+    return this.request('/api/v1/friends/pending');
+  }
+
+  async getSentFriendRequests(): Promise<APIResponse<any[]>> {
+    return this.request('/api/v1/friends/sent');
+  }
+
+  async getFriendshipStatus(username: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/friends/status/${encodeURIComponent(username)}`);
+  }
+
+  // ============================================================
+  // Trading API
+  // ============================================================
+
+  async sendTradeRequest(data: {
+    receiver_username: string;
+    card_type: string;
+    card_id: number;
+    message?: string;
+  }): Promise<APIResponse<any>> {
+    return this.request('/api/v1/trading/send', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async acceptTradeRequest(tradeId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/trading/accept/${tradeId}`, {
+      method: 'POST',
+    });
+  }
+
+  async declineTradeRequest(tradeId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/trading/decline/${tradeId}`, {
+      method: 'POST',
+    });
+  }
+
+  async cancelTradeRequest(tradeId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/trading/cancel/${tradeId}`, {
+      method: 'POST',
+    });
+  }
+
+  async getIncomingTrades(): Promise<APIResponse<any[]>> {
+    return this.request('/api/v1/trading/incoming');
+  }
+
+  async getOutgoingTrades(): Promise<APIResponse<any[]>> {
+    return this.request('/api/v1/trading/outgoing');
+  }
+
+  async syncTradedCard(tradeId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/trading/sync/${tradeId}`, {
+      method: 'POST',
+    });
+  }
+
+  async getSharedCards(): Promise<APIResponse<any[]>> {
+    return this.request('/api/v1/trading/shared-with-me');
+  }
+
+  async getTradeDetails(tradeId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/trading/${tradeId}`);
+  }
+
+  // ============================================================
+  // Notifications API
+  // ============================================================
+
+  async getNotifications(unreadOnly: boolean = false): Promise<APIResponse<any[]>> {
+    const url = unreadOnly ? '/api/v1/notifications/?unread_only=true' : '/api/v1/notifications/';
+    return this.request(url);
+  }
+
+  async getUnreadNotificationCount(): Promise<APIResponse<{ count: number }>> {
+    return this.request('/api/v1/notifications/unread-count');
+  }
+
+  async markNotificationRead(notificationId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/notifications/${notificationId}/read`, {
+      method: 'POST',
+    });
+  }
+
+  async markAllNotificationsRead(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/notifications/read-all', {
+      method: 'POST',
+    });
+  }
+
+  async deleteNotification(notificationId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/notifications/${notificationId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ============================================================
+  // Image Generation API
+  // ============================================================
+
+  async generatePersonalityImage(personalityId: number): Promise<APIResponse<{
+    success: boolean;
+    message: string;
+    remaining: number;
+  }>> {
+    return this.request(`/api/v1/images/personality/${personalityId}`, {
+      method: 'POST',
+    });
+  }
+
+  async generateCardImage(
+    cardType: 'self' | 'character' | 'world' | 'universal',
+    cardId: number
+  ): Promise<APIResponse<{
+    success: boolean;
+    message: string;
+    remaining: number;
+  }>> {
+    return this.request(`/api/v1/images/card/${cardType}/${cardId}`, {
+      method: 'POST',
+    });
+  }
+
+  async getImageGenerationRemaining(): Promise<APIResponse<{
+    remaining: number;
+    daily_limit: number;
+    can_generate: boolean;
+  }>> {
+    return this.request('/api/v1/images/remaining');
   }
 }
 

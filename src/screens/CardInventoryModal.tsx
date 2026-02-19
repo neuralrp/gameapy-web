@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
@@ -52,6 +53,7 @@ function getCardFields(card: Card): Array<{ label: string; value: string; key: s
 
 export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose: () => void; isFullScreen?: boolean }) {
   const { showToast, counselor } = useApp();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('self');
   const [cards, setCards] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,13 +84,28 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
   });
   const [savingAdvisor, setSavingAdvisor] = useState(false);
 
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [imageRemaining, setImageRemaining] = useState<number | undefined>(undefined);
+
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
   const counselorColor = counselor?.visuals.selectionCard.backgroundColor || '#8B7355';
 
   useEffect(() => {
     loadCards();
+    loadImageRemaining();
   }, []);
+
+  const loadImageRemaining = async () => {
+    try {
+      const response = await apiService.getImageGenerationRemaining();
+      if (response.success && response.data) {
+        setImageRemaining(response.data.remaining);
+      }
+    } catch (err) {
+      console.error('Failed to load image remaining:', err);
+    }
+  };
 
   useEffect(() => {
     if (activeTab === 'advisor') {
@@ -169,6 +186,30 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
       setError(err instanceof Error ? err.message : 'Failed to update auto-update');
     } finally {
       setTogglingCardId(null);
+    }
+  };
+
+  const handleGenerateImage = async () => {
+    if (!selectedCard) return;
+    
+    setGeneratingImage(true);
+    try {
+      const response = await apiService.generateCardImage(
+        selectedCard.card_type as 'self' | 'character' | 'world' | 'universal',
+        selectedCard.id
+      );
+      
+      if (response.success) {
+        showToast({ message: 'Image generation started! Check back in a moment.', type: 'info' });
+        setImageRemaining(response.data?.remaining);
+      } else {
+        showToast({ message: response.message || 'Failed to generate image', type: 'error' });
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate image';
+      showToast({ message: errorMessage, type: 'error' });
+    } finally {
+      setGeneratingImage(false);
     }
   };
 
@@ -468,6 +509,11 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     setIsCreating(true);
   };
 
+  const handleCreateAdvisor = () => {
+    onClose();
+    navigate('/create-advisor');
+  };
+
   const handleCreateFormChange = (field: string, value: string) => {
     setCreateForm(prev => ({ ...prev, [field]: value }));
     setCreateError(null);
@@ -521,7 +567,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     }
     const tabName = activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
     if (activeTab === 'advisor') {
-      return 'No custom advisors yet. Create one by tapping the + button on the counselor selection screen!';
+      return 'No custom advisors yet. Create your first one!';
     }
     return `No ${tabName} cards yet. Start chatting to create cards!`;
   };
@@ -630,6 +676,9 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                 onToggleAutoUpdate={() => handleToggleAutoUpdate(selectedCard)}
                 toggling={togglingCardId === selectedCard.id}
                 counselorColor={counselorColor}
+                onGenerateImage={handleGenerateImage}
+                generatingImage={generatingImage}
+                imageRemaining={imageRemaining}
               />
             )
           ) : selectedAdvisor ? (
@@ -658,14 +707,14 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                 <Settings className="w-8 h-8 text-gray-400" />
               </div>
               <p className="font-sans text-gray-600 text-base mb-6">{getEmptyStateMessage()}</p>
-              {!debouncedSearchQuery && activeTab !== 'advisor' && (
+              {!debouncedSearchQuery && (
                 <button
-                  onClick={() => handleStartCreate(activeTab as CardType)}
+                  onClick={() => activeTab === 'advisor' ? handleCreateAdvisor() : handleStartCreate(activeTab as CardType)}
                   className="pill-button pill-button-primary"
                   style={{ background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)` }}
                 >
                   <Plus className="w-5 h-5 mr-2" />
-                  Create {activeTab === 'world' ? 'Universal' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Card
+                  Create {activeTab === 'advisor' ? 'Advisor' : activeTab === 'world' ? 'Universal' : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Card
                 </button>
               )}
             </div>
@@ -749,15 +798,15 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
             </div>
           )}
 
-          {!selectedCard && !isCreating && activeTab !== 'advisor' && filteredCards.length > 0 && (
+          {!selectedCard && !isCreating && (
             <button
-              onClick={() => handleStartCreate(activeTab as CardType)}
+              onClick={() => activeTab === 'advisor' ? handleCreateAdvisor() : handleStartCreate(activeTab as CardType)}
               className="fixed bottom-24 right-6 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110 active:scale-95 z-10"
               style={{
                 background: `linear-gradient(135deg, ${counselorColor} 0%, ${counselorColor}DD 100%)`,
                 boxShadow: `0 4px 14px rgba(0, 0, 0, 0.15), 0 0 0 4px ${counselorColor}33`
               }}
-              aria-label="Create new card"
+              aria-label={activeTab === 'advisor' ? 'Create new advisor' : 'Create new card'}
             >
               <Plus className="w-7 h-7 text-white" />
             </button>
@@ -775,6 +824,9 @@ function CardDetailView({
   onToggleAutoUpdate,
   toggling,
   counselorColor,
+  onGenerateImage,
+  generatingImage,
+  imageRemaining,
 }: {
   card: Card;
   onEdit: () => void;
@@ -782,11 +834,28 @@ function CardDetailView({
   onToggleAutoUpdate: () => void;
   toggling: boolean;
   counselorColor: string;
+  onGenerateImage?: () => void;
+  generatingImage?: boolean;
+  imageRemaining?: number;
 }) {
   const fields = getCardFields(card);
+  const hasImage = card.payload?.image_data;
+  const canGenerateImage = imageRemaining !== undefined && imageRemaining > 0;
 
   return (
     <div className="space-y-4">
+      {hasImage && (
+        <div className="card-detail-section">
+          <div className="flex justify-center mb-4">
+            <img 
+              src={card.payload.image_data} 
+              alt={card.payload?.name || card.payload?.title || 'Card'}
+              className="w-64 h-64 object-cover rounded-xl shadow-md"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="card-detail-section">
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
@@ -807,6 +876,30 @@ function CardDetailView({
           </div>
         ))}
       </div>
+
+      {onGenerateImage && (
+        <div className="card-detail-section">
+          <div className="flex items-center justify-between py-2">
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🎨</span>
+              <div>
+                <div className="font-medium text-gray-900">Card Image</div>
+                <div className="text-sm text-gray-500">
+                  {hasImage ? 'Generate a new image' : 'Generate an AI image'}
+                  {imageRemaining !== undefined && ` (${imageRemaining} left today)`}
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={onGenerateImage}
+              disabled={generatingImage || !canGenerateImage}
+              className="px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {generatingImage ? 'Generating...' : hasImage ? 'Regenerate' : 'Generate'}
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="card-detail-section">
         <div className="flex items-center justify-between py-2">

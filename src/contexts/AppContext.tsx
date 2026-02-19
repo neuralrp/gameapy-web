@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import type { Counselor } from '../types/counselor';
+import type { Personality } from '../types/personality';
 import type { APIResponse } from '../types/api';
 import type { HealthCheck } from '../types/health';
+import type { SessionInfo } from '../types/api';
 import { apiService } from '../services/api';
 
 interface Toast {
@@ -19,8 +20,9 @@ interface AppContextType {
   authLoading: boolean;
   clientLoading: boolean;
   sessionId: number | null;
-  counselor: Counselor | null;
-  setCounselor: (counselor: Counselor | null) => void;
+  setSessionId: (id: number | null) => void;
+  counselor: Personality | null;
+  setCounselor: (counselor: Personality | null) => void;
   showInventory: boolean;
   setShowInventory: (show: boolean) => void;
   showInventoryFullScreen: boolean;
@@ -44,6 +46,11 @@ interface AppContextType {
   stopHealthChecks: () => void;
   checkHealthNow: () => Promise<void>;
   logout: () => void;
+  sessions: SessionInfo[];
+  loadSessions: () => Promise<void>;
+  resumeSession: (session: SessionInfo) => Promise<void>;
+  endCurrentSession: () => Promise<void>;
+  isResumingSession: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -55,7 +62,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [authLoading, setAuthLoading] = useState(true);
   const [clientLoading, setClientLoading] = useState(true);
   const [sessionId, setSessionId] = useState<number | null>(null);
-  const [counselor, setCounselor] = useState<Counselor | null>(null);
+  const [counselor, setCounselor] = useState<Personality | null>(null);
   const [showInventory, setShowInventory] = useState(false);
   const [showInventoryFullScreen, setShowInventoryFullScreen] = useState(false);
   const [showFarm, setShowFarm] = useState(false);
@@ -68,6 +75,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [consecutiveHealthFailures, setConsecutiveHealthFailures] = useState(0);
   const [showHealthModal, setShowHealthModal] = useState(false);
   const healthIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [sessions, setSessions] = useState<SessionInfo[]>([]);
+  const [isResumingSession, setIsResumingSession] = useState(false);
 
   const calculateNextRetryDelay = () => {
     if (consecutiveHealthFailures === 0) {
@@ -135,9 +144,77 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setClientId(null);
     setCounselor(null);
     setSessionId(null);
+    setSessions([]);
     localStorage.removeItem('gameapy_auth_token');
     localStorage.removeItem('gameapy_client_id_int');
     localStorage.removeItem('gameapy_session_id');
+  };
+
+  const loadSessions = async () => {
+    try {
+      const response = await apiService.getAllSessions(50) as APIResponse<{ sessions: SessionInfo[] }>;
+      if (response.success && response.data?.sessions) {
+        setSessions(response.data.sessions);
+      }
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+    }
+  };
+
+  const resumeSession = async (session: SessionInfo) => {
+    setIsResumingSession(true);
+    try {
+      const defaultPersonality = await apiService.getDefaultPersonality();
+      const counselor: Personality = {
+        id: session.counselor_id,
+        name: session.counselor_name,
+        description: '',
+        specialty: '',
+        visuals: defaultPersonality?.visuals || {
+          primaryColor: '#F8F0D8',
+          secondaryColor: '#E8E0C8',
+          borderColor: '#D8D0B8',
+          textColor: '#483018',
+          chatBubble: {
+            backgroundColor: '#F8F0D8',
+            borderColor: '#D8D0B8',
+            borderWidth: '2px',
+            borderStyle: 'solid',
+            borderRadius: '8px',
+            textColor: '#483018',
+          },
+          selectionCard: {
+            backgroundColor: '#F8F0D8',
+            hoverBackgroundColor: '#F8F0D8CC',
+            borderColor: '#D8D0B8',
+            textColor: '#483018',
+          },
+          chatBackdrop: {
+            type: 'gradient' as const,
+            gradient: 'linear-gradient(180deg, #F8F0D8 0%, #E8E0C8 100%)',
+          },
+        },
+      };
+      setCounselor(counselor);
+      setSessionId(session.id);
+      localStorage.setItem('gameapy_session_id', session.id.toString());
+    } catch (error) {
+      console.error('Failed to resume session:', error);
+      showToast({ message: 'Failed to resume session', type: 'error' });
+    } finally {
+      setIsResumingSession(false);
+    }
+  };
+
+  const endCurrentSession = async () => {
+    if (sessionId) {
+      try {
+        await apiService.endSession(sessionId);
+        await loadSessions();
+      } catch (error) {
+        console.error('Failed to end session:', error);
+      }
+    }
   };
 
   const createSessionForCounselor = async (counselorId: number) => {
@@ -156,7 +233,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const handleSetCounselor = async (newCounselor: Counselor | null) => {
+  const handleSetCounselor = async (newCounselor: Personality | null) => {
     setCounselor(newCounselor);
 
     if (newCounselor) {
@@ -240,6 +317,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         authLoading,
         clientLoading,
         sessionId,
+        setSessionId,
         counselor,
         setCounselor: handleSetCounselor,
         showInventory,
@@ -265,6 +343,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         stopHealthChecks,
         checkHealthNow,
         logout,
+        sessions,
+        loadSessions,
+        resumeSession,
+        endCurrentSession,
+        isResumingSession,
       }}
     >
       {children}

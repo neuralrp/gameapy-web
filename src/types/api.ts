@@ -57,6 +57,18 @@ export interface SessionResponse {
   started_at: string;
 }
 
+export interface SessionInfo {
+  id: number;
+  client_id: number;
+  counselor_id: number;
+  session_number: number;
+  started_at: string;
+  ended_at: string | null;
+  summary: string | null;
+  summary_generated_at: string | null;
+  counselor_name: string;
+}
+
 export interface MessageCreate {
   role: 'user' | 'assistant' | 'system';
   content: string;
@@ -66,6 +78,7 @@ export interface MessageCreate {
 export interface ChatRequest {
   session_id: number;
   message_data: MessageCreate;
+  trigger_wildcard?: boolean;
 }
 
 export interface ChatResponse {

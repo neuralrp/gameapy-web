@@ -22,7 +22,7 @@ export function CounselorSelection() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showHelp, setShowHelp] = useState(false);
-  const [isPanelOpen, setIsPanelOpen] = useState(true);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -180,15 +180,17 @@ export function CounselorSelection() {
               {counselors.map((counselor) => {
                 const imageUrl = counselor.visuals.selectionCard.image;
                 const bgColor = getCounselorColor(counselor);
+                const isDefault = counselor.is_default;
 
                 return (
                   <button
                     key={counselor.id}
                     onClick={() => handleSelect(counselor)}
                     className={`
-                      w-full flex items-center gap-3 p-2 rounded-lg border-2 border-gba-border
+                      w-full flex items-center gap-3 p-2 rounded-lg border-2
                       transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]
                       ${selectedCounselor?.id === counselor.id ? 'ring-2 ring-gba-highlight border-gba-highlight' : ''}
+                      ${isDefault ? 'border-blue-400 ring-1 ring-blue-300/50' : 'border-gba-border'}
                     `}
                     style={{ backgroundColor: bgColor }}
                     aria-label={`Select ${counselor.name}`}
@@ -201,6 +203,11 @@ export function CounselorSelection() {
                       }}
                     />
                     <div className="flex-1 text-left min-w-0">
+                      {isDefault && (
+                        <span className="text-[10px] text-blue-600 font-medium uppercase tracking-wide block -mb-0.5">
+                          Recommended
+                        </span>
+                      )}
                       <span className="text-gba-text font-bold text-sm drop-shadow-md block truncate">
                         {truncateName(counselor.name)}
                       </span>

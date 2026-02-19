@@ -64,7 +64,7 @@ gameapy-web/              # Web frontend repo
 - Keyword-Only Entity Detection: Fast, simple matching (no vector embeddings)
 - Auto-Update System: Invisible updates with per-card toggles
 - Context Assembly: Self + pinned + current + recent cards
-- Pytest Testing Infrastructure: File-based test DB, LLM mocking, test isolation
+- Pytest Testing Infrastructure: PostgreSQL test database, LLM mocking, test isolation
 - **All 99 tests passing** (100% pass rate, 68% code coverage)
 - Deterministic test execution (no state pollution, per-request LLM clients)
 - **Human-Readable Context**: JSON cards converted to prose for better LLM comprehension
@@ -465,7 +465,7 @@ pytest tests/ --cov=app --cov-report=html
 
 ### Test Infrastructure
 
-- **Database Isolation**: File-based test DB (`gameapy_test.db`) with per-test truncation
+- **Database Isolation**: PostgreSQL test database with per-test truncation
 - **LLM Mocking**: Deterministic mocks for success/fallback/error/no-card scenarios
 - **Per-Request Clients**: No global httpx.AsyncClient caching (prevents event loop issues)
 - **Test Categories**: `@pytest.mark.unit/integration/e2e/slow/llm`
