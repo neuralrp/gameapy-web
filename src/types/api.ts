@@ -1,4 +1,5 @@
 import type { CounselorFromDB } from './counselor';
+import type { ConversationMode } from './card';
 
 export interface APIResponse<T = any> {
   success: boolean;
@@ -164,6 +165,10 @@ export interface StreamChunk {
     cards_loaded: number;
     counselor_switched?: boolean;
     new_counselor?: CounselorFromDB['profile']['data'];
+    wildcard?: {
+      topic_text: string;
+    };
+    conversation_mode?: ConversationMode;
   };
   error?: string;
 }

@@ -67,33 +67,6 @@ export function TableProvider({ children }: { children: ReactNode }) {
 
   const conversationMode = determineMode(slots);
 
-  const playDefaultPersonality = useCallback(async (sid: number, personality: Personality) => {
-    try {
-      await apiService.playCardToTable(sid, 'far_left', 'personality', personality.id);
-      
-      const slotCard: TableSlotCard = {
-        session_id: sid,
-        slot_position: 'far_left',
-        card_type: 'personality',
-        card_id: personality.id,
-        card_data: {
-          name: personality.name,
-          description: personality.description,
-          specialty: personality.specialty,
-          visuals: personality.visuals,
-        },
-      };
-      
-      setSlots(prev => ({
-        ...prev,
-        far_left: slotCard,
-      }));
-      setConversationPartner(personality);
-    } catch (error) {
-      console.error('Failed to play default personality:', error);
-    }
-  }, []);
-
   const playCard = useCallback(async (position: TableSlotPosition) => {
     if (!draggedCard || !sessionId) return;
     

@@ -54,7 +54,7 @@ export type UnifiedCard = Card;
 
 export type TableSlotPosition = 'center' | 'far_left' | 'far_right';
 export type ConversationMode = 'advisory' | 'roleplay' | 'three_way';
-export type ExtendedCardType = CardType | 'universal' | 'personality';
+export type ExtendedCardType = CardType | 'universal' | 'personality' | 'wildcard';
 
 export interface UniversalCard {
   id: number;

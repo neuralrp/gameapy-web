@@ -11,7 +11,7 @@ import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
 import type { Message } from '../types/message';
 import type { Counselor } from '../types/counselor';
-import type { HandCard, TableSlotPosition } from '../types/card';
+import type { HandCard, TableSlotPosition, ConversationMode } from '../types/card';
 
 export function ChatScreen() {
   return (
@@ -44,10 +44,10 @@ function ChatScreenContent() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showCounselorInfo, setShowCounselorInfo] = useState(false);
-  const [activeConversationMode, setActiveConversationMode] = useState<string>('advisory');
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [activeConversationMode, setActiveConversationMode] = useState<ConversationMode>('advisory');
 
   useEffect(() => {
     startHealthChecks();
@@ -132,8 +132,12 @@ function ChatScreenContent() {
 
   const handleWildcardDragStart = () => {
     setDraggedCard({
+      id: 0,
+      client_id: 0,
       card_type: 'wildcard',
       card_id: 0,
+      position: 0,
+      added_at: new Date().toISOString(),
       card_data: { name: 'WILDCARD' }
     });
   };
@@ -155,14 +159,14 @@ function ChatScreenContent() {
       }
 
       if (result.success) {
-        showToast('Image generation queued', 'success');
+        showToast({ message: 'Image generation queued', type: 'success' });
         // Reload hand to get updated image
         await loadAllCards();
       } else {
-        showToast(`Failed to generate image: ${result.message}`, 'error');
+        showToast({ message: `Failed to generate image: ${result.message}`, type: 'error' });
       }
     } catch (error) {
-      showToast('Error generating image', 'error');
+      showToast({ message: 'Error generating image', type: 'error' });
       console.error('Image generation error:', error);
     }
   };
@@ -176,10 +180,7 @@ function ChatScreenContent() {
     try {
       await playCard(position);
     } catch (error) {
-      showToast({
-        message: 'Failed to play card',
-        type: 'error',
-      });
+      showToast({ message: 'Failed to play card', type: 'error' });
     }
   };
 
@@ -224,24 +225,18 @@ function ChatScreenContent() {
           requestAnimationFrame(() => scrollToBottom());
         } else if (chunk.type === 'done' && chunk.data) {
           const { wildcard } = chunk.data;
-          
+
           if (wildcard) {
-            showToast({
-              message: `🎴 Wildcard: ${wildcard.topic_text}`,
-              type: 'info',
-            });
+            showToast({ message: `🎴 Wildcard: ${wildcard.topic_text}`, type: 'info' });
           }
-          
+
           incrementSessionMessageCount();
         } else if (chunk.type === 'error') {
           throw new Error(chunk.error || 'Stream error occurred');
         }
       }
     } catch (err) {
-      showToast({
-        message: err instanceof Error ? err.message : 'Failed to trigger wildcard',
-        type: 'error',
-      });
+      showToast({ message: err instanceof Error ? err.message : 'Failed to trigger wildcard', type: 'error' });
       setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
     }
 
@@ -252,10 +247,7 @@ function ChatScreenContent() {
     try {
       await removeCard(position);
     } catch (error) {
-      showToast({
-        message: 'Failed to remove card',
-        type: 'error',
-      });
+      showToast({ message: 'Failed to remove card', type: 'error' });
     }
   };
 
@@ -349,17 +341,14 @@ function ChatScreenContent() {
         }
 
         break;
-      } catch (err) {
-        retries++;
-        if (retries >= maxRetries) {
-          showToast({
-            message: err instanceof Error ? err.message : 'Failed to send message',
-            type: 'error',
-          });
-          setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
+        } catch (err) {
+          retries++;
+          if (retries >= maxRetries) {
+            showToast({ message: err instanceof Error ? err.message : 'Failed to send message', type: 'error' });
+            setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
+          }
         }
       }
-    }
 
     setIsLoading(false);
   };
@@ -409,13 +398,10 @@ function ChatScreenContent() {
           throw new Error(chunk.error || 'Stream error occurred');
         }
       }
-    } catch (err) {
-      showToast({
-        message: err instanceof Error ? err.message : 'Failed to continue',
-        type: 'error',
-      });
-      setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
-    }
+      } catch (err) {
+        showToast({ message: err instanceof Error ? err.message : 'Failed to continue', type: 'error' });
+        setMessages(prev => prev.filter(msg => msg.id !== assistantMessageId));
+      }
 
     setIsLoading(false);
   };
@@ -520,8 +506,8 @@ function ChatScreenContent() {
           {conversationMode === 'roleplay' && (
             <span>🎭 Roleplay Mode — Speaking as character on the table</span>
           )}
-          {conversationMode === 'narrative' && (
-            <span>📖 Narrative Mode — Watching a conversation unfold</span>
+          {conversationMode === 'three_way' && (
+            <span>📖 Three-Way Mode — Watching a conversation unfold</span>
           )}
         </div>
       )}
@@ -590,10 +576,10 @@ function ChatScreenContent() {
         <div className="space-y-3 flex-1 overflow-y-auto">
           {messages.map((message, index) => {
             const isLastMessage = index === messages.length - 1;
-            const showKeepGoing = isLastMessage && 
-                                   message.role === 'assistant' && 
-                                   message.content && 
-                                   activeConversationMode === 'narrative' && 
+            const showKeepGoing = isLastMessage &&
+                                   message.role === 'assistant' &&
+                                   message.content &&
+                                   activeConversationMode === 'three_way' &&
                                    !isLoading;
             
             return (
