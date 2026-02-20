@@ -166,102 +166,115 @@ export function TableProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const loadAllCards = useCallback(async () => {
-    try {
-      const [cardsRes, universalRes, counselorsRes] = await Promise.all([
-        apiService.getCards(),
-        apiService.getUniversalCards(),
-        apiService.getCounselors(),
-      ]);
+    const results = await Promise.allSettled([
+      apiService.getCards(),
+      apiService.getUniversalCards(),
+      apiService.getCounselors(),
+    ]);
 
-      const allCards: HandCard[] = [];
-      const items = cardsRes.data?.items || [];
+    const cardsRes = results[0].status === 'fulfilled'
+      ? results[0].value
+      : { data: { items: [] } };
+    const universalRes = results[1].status === 'fulfilled'
+      ? results[1].value
+      : { data: [] };
+    const counselorsRes = results[2].status === 'fulfilled'
+      ? results[2].value
+      : [];
 
-      // 1. Self cards
-      items
-        .filter((c: Card) => c.card_type === 'self')
-        .forEach((card: Card) => {
-          allCards.push({
-            id: card.id,
-            client_id: 0,
-            card_type: 'self',
-            card_id: card.id,
-            position: 0,
-            added_at: card.created_at,
-            card_data: card.payload,
-          });
-        });
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        const names = ['cards', 'universal cards', 'counselors'];
+        console.warn(`Failed to load ${names[i]}:`, r.reason);
+      }
+    });
 
-      // 2. Character cards
-      items
-        .filter((c: Card) => c.card_type === 'character')
-        .forEach((card: Card) => {
-          allCards.push({
-            id: card.id,
-            client_id: 0,
-            card_type: 'character',
-            card_id: card.id,
-            position: 0,
-            added_at: card.created_at,
-            card_data: card.payload,
-          });
-        });
+    const allCards: HandCard[] = [];
+    const items = cardsRes.data?.items || [];
 
-      // 3. World cards
-      items
-        .filter((c: Card) => c.card_type === 'world')
-        .forEach((card: Card) => {
-          allCards.push({
-            id: card.id,
-            client_id: 0,
-            card_type: 'world',
-            card_id: card.id,
-            position: 0,
-            added_at: card.created_at,
-            card_data: card.payload,
-          });
-        });
-
-      // 5. Universal cards
-      (universalRes.data || []).forEach((card: any) => {
+    // 1. Self cards
+    items
+      .filter((c: Card) => c.card_type === 'self')
+      .forEach((card: Card) => {
         allCards.push({
           id: card.id,
           client_id: 0,
-          card_type: 'universal',
+          card_type: 'self',
           card_id: card.id,
           position: 0,
           added_at: card.created_at,
-          card_data: {
-            name: card.title,
-            title: card.title,
-            description: card.description,
-            ...card.card_json,
-            image_url: card.image_url,
-          },
+          card_data: card.payload,
         });
       });
 
-      // 6. Counselors (personalities)
-      counselorsRes.forEach((c: Counselor) => {
+    // 2. Character cards
+    items
+      .filter((c: Card) => c.card_type === 'character')
+      .forEach((card: Card) => {
         allCards.push({
-          id: -c.id,
+          id: card.id,
           client_id: 0,
-          card_type: 'personality',
-          card_id: c.id,
+          card_type: 'character',
+          card_id: card.id,
           position: 0,
-          added_at: new Date().toISOString(),
-          card_data: {
-            name: c.name,
-            description: c.description,
-            specialty: c.specialty,
-            visuals: c.visuals,
-          },
+          added_at: card.created_at,
+          card_data: card.payload,
         });
       });
 
-      setHand(allCards);
-    } catch (error) {
-      console.error('Failed to load all cards:', error);
-    }
+    // 3. World cards
+    items
+      .filter((c: Card) => c.card_type === 'world')
+      .forEach((card: Card) => {
+        allCards.push({
+          id: card.id,
+          client_id: 0,
+          card_type: 'world',
+          card_id: card.id,
+          position: 0,
+          added_at: card.created_at,
+          card_data: card.payload,
+        });
+      });
+
+    // 5. Universal cards
+    (universalRes.data || []).forEach((card: any) => {
+      allCards.push({
+        id: card.id,
+        client_id: 0,
+        card_type: 'universal',
+        card_id: card.id,
+        position: 0,
+        added_at: card.created_at,
+        card_data: {
+          name: card.title,
+          title: card.title,
+          description: card.description,
+          ...card.card_json,
+          image_url: card.image_url,
+        },
+      });
+    });
+
+    // 6. Counselors (personalities)
+    counselorsRes.forEach((c: Counselor) => {
+      allCards.push({
+        id: -c.id,
+        client_id: 0,
+        card_type: 'personality',
+        card_id: c.id,
+        position: 0,
+        added_at: new Date().toISOString(),
+        card_data: {
+          name: c.name,
+          description: c.description,
+          specialty: c.specialty,
+          visuals: c.visuals,
+        },
+      });
+    });
+
+    setHand(allCards);
   }, []);
 
   const addCardToHand = useCallback(async (cardType: string, cardId: number) => {
