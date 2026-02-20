@@ -22,7 +22,7 @@ export function ChatScreen() {
 }
 
 function ChatScreenContent() {
-  const { counselor, setCounselor, clientLoading, sessionId, sessionMessageCount, incrementSessionMessageCount, resetSessionMessageCount, showToast, startHealthChecks, stopHealthChecks, setShowHealthModal, endCurrentSession, loadSessions } = useApp();
+  const { counselor, setCounselor, clientLoading, sessionId, sessionMessageCount, incrementSessionMessageCount, resetSessionMessageCount, showToast, startHealthChecks, stopHealthChecks, setShowHealthModal, loadSessions } = useApp();
   const {
     slots,
     hand,
@@ -117,9 +117,6 @@ function ChatScreenContent() {
   }, [sessionId, sessionMessageCount]);
 
   const handleBack = async () => {
-    if (sessionId && sessionMessageCount > 0) {
-      await endCurrentSession();
-    }
     resetSessionMessageCount();
     setCounselor(null);
     await loadSessions();
