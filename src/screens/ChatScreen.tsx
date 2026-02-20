@@ -13,6 +13,7 @@ import { HoldToTalkButton } from '../components/chat/HoldToTalkButton';
 import type { VoiceButtonState } from '../components/chat/HoldToTalkButton';
 import { useVoiceInput } from '../hooks/useVoiceInput';
 import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
+import { useHaptics } from '../hooks/useHaptics';
 import { TableProvider, useTable } from '../contexts/TableContext';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
@@ -62,6 +63,7 @@ function ChatScreenContent() {
   
   const { isListening, hasPermission, requestPermission, transcript, interimTranscript, startListening, stopListeningAndGetResult, resetTranscript } = useVoiceInput();
   const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported } = useSpeechSynthesis();
+  const haptics = useHaptics();
 
   useEffect(() => {
     startHealthChecks();
@@ -301,13 +303,14 @@ function ChatScreenContent() {
     }
   };
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading || !sessionId) return;
+  const handleSend = async (messageOverride?: string) => {
+    const messageText = (messageOverride ?? input).trim();
+    if (!messageText || isLoading || !sessionId) return;
 
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: 'user',
-      content: input,
+      content: messageText,
       timestamp: new Date().toISOString(),
     };
 
@@ -411,6 +414,9 @@ function ChatScreenContent() {
       }
 
     setIsLoading(false);
+    if (fullContent) {
+      haptics.success();
+    }
     if (talkMode && fullContent && ttsSupported) {
       speak(fullContent);
     }
@@ -463,18 +469,18 @@ function ChatScreenContent() {
       }
 
     setIsLoading(false);
+    if (fullContent) {
+      haptics.success();
+    }
     if (talkMode && fullContent && ttsSupported) {
       speak(fullContent);
     }
   };
 
   const handleVoiceTranscriptReady = (text: string) => {
-    setInput(text);
     setVoiceTranscript('');
     setVoiceInterim('');
-    setTimeout(() => {
-      handleSend();
-    }, 100);
+    handleSend(text);
   };
 
   const handleVoiceCancel = () => {
@@ -485,6 +491,7 @@ function ChatScreenContent() {
   };
 
   const handleHoldStart = async () => {
+    haptics.medium();
     setVoiceTranscript('');
     setVoiceInterim('');
     setInput('');
@@ -493,13 +500,13 @@ function ChatScreenContent() {
   };
 
   const handleHoldEnd = () => {
+    haptics.light();
     stopListeningAndGetResult((finalTranscript: string) => {
-      if (finalTranscript.trim()) {
-        setInput(finalTranscript.trim());
+      const text = finalTranscript.trim();
+      if (text) {
+        setVoiceButtonState('sending');
         resetTranscript();
-        setTimeout(() => {
-          handleSend();
-        }, 50);
+        handleSend(text);
       }
     });
   };
@@ -821,7 +828,7 @@ function ChatScreenContent() {
                 rows={1}
               />
               <button
-                onClick={handleSend}
+                onClick={() => handleSend()}
                 disabled={!input.trim() || isLoading || !sessionId}
                 className="send-button min-h-[44px] min-w-[44px]"
                 style={{
