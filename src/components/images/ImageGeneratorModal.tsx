@@ -45,9 +45,9 @@ export function ImageGeneratorModal({
     try {
       const response = await apiService.generateImagePreview(prompt.trim());
 
-      if (response.success && response.data?.image_data) {
-        setGeneratedImage(response.data.image_data);
-        setRemaining(response.data.remaining);
+      if (response.success && response.image_data) {
+        setGeneratedImage(response.image_data);
+        setRemaining(response.remaining);
       } else {
         setError(response.message || 'Failed to generate image');
       }

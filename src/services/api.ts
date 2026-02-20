@@ -737,20 +737,21 @@ export class ApiService {
     });
   }
 
-  async getImageGenerationRemaining(): Promise<APIResponse<{
+  async getImageGenerationRemaining(): Promise<{
+    success: boolean;
     remaining: number;
     daily_limit: number;
     can_generate: boolean;
-  }>> {
+  }> {
     return this.request('/api/v1/images/remaining');
   }
 
-  async generateImagePreview(prompt: string): Promise<APIResponse<{
+  async generateImagePreview(prompt: string): Promise<{
     success: boolean;
     message: string;
     image_data: string | null;
     remaining: number;
-  }>> {
+  }> {
     return this.request('/api/v1/images/generate-preview', {
       method: 'POST',
       body: JSON.stringify({ prompt }),
@@ -761,11 +762,11 @@ export class ApiService {
     cardType: 'self' | 'character' | 'world' | 'universal',
     cardId: number,
     imageData: string
-  ): Promise<APIResponse<{
+  ): Promise<{
     success: boolean;
     message: string;
     remaining: number;
-  }>> {
+  }> {
     return this.request(`/api/v1/images/card/${cardType}/${cardId}/save-image`, {
       method: 'POST',
       body: JSON.stringify({ image_data: imageData }),

@@ -100,8 +100,8 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
   const loadImageRemaining = async () => {
     try {
       const response = await apiService.getImageGenerationRemaining();
-      if (response.success && response.data) {
-        setImageRemaining(response.data.remaining);
+      if (response.success) {
+        setImageRemaining(response.remaining);
       }
     } catch (err) {
       console.error('Failed to load image remaining:', err);
