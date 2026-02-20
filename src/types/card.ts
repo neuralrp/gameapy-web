@@ -1,10 +1,15 @@
 export type CardType = 'self' | 'character' | 'world';
 
+export interface SimplifiedCardPayload {
+  name: string;
+  ai_notes: string;
+  user_notes: string;
+}
+
 export interface BaseCard {
   id: number;
   card_type: CardType;
-  payload: Record<string, any>;
-  auto_update_enabled: boolean;
+  payload: SimplifiedCardPayload & Record<string, any>;
   is_pinned: boolean;
   created_at: string;
   updated_at: string;
@@ -12,35 +17,21 @@ export interface BaseCard {
 
 export interface SelfCard extends BaseCard {
   card_type: 'self';
-  payload: {
-    name?: string;
-    personality?: string;
-    background?: string;
-    [key: string]: any;
-  };
+  payload: SimplifiedCardPayload;
 }
 
 export interface CharacterCard extends BaseCard {
   card_type: 'character';
-  payload: {
-    name: string;
-    relationship_type: string;
-    relationship_label?: string;
-    personality: string;
-    [key: string]: any;
-  };
+  payload: SimplifiedCardPayload;
 }
 
 export interface WorldCard extends BaseCard {
   card_type: 'world';
-  payload: {
-    title: string;
-    description: string;
-    event_type?: string;
-    key_array: string[];
-    is_canon_law?: boolean;
+  payload: SimplifiedCardPayload & {
+    title?: string;
+    description?: string;
+    key_array?: string[];
     resolved?: boolean;
-    [key: string]: any;
   };
 }
 

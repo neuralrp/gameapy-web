@@ -28,25 +28,16 @@ function getCardFields(card: Card): Array<{ label: string; value: string; key: s
   const fields: Array<{ label: string; value: string; key: string }> = [];
 
   if (card.card_type === 'world') {
-    fields.push({ label: 'Title', value: payload.title || '', key: 'title' });
-    if (payload.key_array && payload.key_array.length > 0) {
-      fields.push({ label: 'Keywords', value: payload.key_array.join(', '), key: 'key_array' });
-    }
-    if (payload.is_canon_law !== undefined) fields.push({ label: 'Canon Law', value: payload.is_canon_law ? 'Yes' : 'No', key: 'is_canon_law' });
-    if (payload.resolved !== undefined) fields.push({ label: 'Resolved', value: payload.resolved ? 'Yes' : 'No', key: 'resolved' });
-  } else if (card.card_type === 'character') {
-    fields.push({ label: 'Name', value: payload.name || '', key: 'name' });
-    if (payload.relationship_type) fields.push({ label: 'Relationship', value: payload.relationship_type, key: 'relationship_type' });
-    if (payload.relationship_label) fields.push({ label: 'Custom Label', value: payload.relationship_label, key: 'relationship_label' });
-    if (payload.personality) fields.push({ label: 'Personality', value: payload.personality, key: 'personality' });
+    fields.push({ label: 'Title', value: payload.name || payload.title || '', key: 'name' });
   } else {
-    if (payload.name) fields.push({ label: 'Name', value: payload.name, key: 'name' });
-    if (payload.personality) fields.push({ label: 'Personality', value: payload.personality, key: 'personality' });
-    if (payload.background) fields.push({ label: 'Background', value: payload.background, key: 'background' });
+    fields.push({ label: 'Name', value: payload.name || '', key: 'name' });
   }
 
-  if (payload.description) {
-    fields.push({ label: 'Description', value: payload.description, key: 'description' });
+  if (payload.ai_notes) {
+    fields.push({ label: 'AI Notes', value: payload.ai_notes, key: 'ai_notes' });
+  }
+  if (payload.user_notes) {
+    fields.push({ label: 'Your Notes', value: payload.user_notes, key: 'user_notes' });
   }
 
   return fields;
@@ -169,27 +160,6 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     }
   };
 
-  const handleToggleAutoUpdate = async (card: Card) => {
-    setTogglingCardId(card.id);
-
-    try {
-      await apiService.toggleAutoUpdate(card.card_type, card.id);
-      await loadCards();
-
-      if (selectedCard && selectedCard.id === card.id) {
-        const updatedCard = cards.find(c => c.id === card.id);
-        if (updatedCard) {
-          setSelectedCard(updatedCard);
-        }
-      }
-    } catch (err) {
-      console.error('Failed to toggle auto-update:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update auto-update');
-    } finally {
-      setTogglingCardId(null);
-    }
-  };
-
   const handleOpenImageGenerator = () => {
     setShowImageGenerator(true);
   };
@@ -220,26 +190,11 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
 
   const extractEditableFields = (card: Card): Record<string, string> => {
     const payload = card.payload || {};
-    if (card.card_type === 'world') {
-      return {
-        title: payload.title || '',
-        description: payload.description || '',
-      };
-    } else if (card.card_type === 'character') {
-      return {
-        name: payload.name || '',
-        relationship_type: payload.relationship_type || '',
-        relationship_label: payload.relationship_label || '',
-        personality: payload.personality || '',
-      };
-    } else {
-      return {
-        name: payload.name || '',
-        personality: payload.personality || '',
-        background: payload.background || '',
-        description: payload.description || '',
-      };
-    }
+    return {
+      name: payload.name || '',
+      ai_notes: payload.ai_notes || '',
+      user_notes: payload.user_notes || '',
+    };
   };
 
   const handleFormChange = (field: string, value: string) => {
@@ -294,24 +249,10 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
   const validateForm = (cardType: CardType, form: Record<string, string>): string[] => {
     const errors: string[] = [];
 
-    if (cardType === 'world') {
-      if (!form.title.trim()) errors.push('Title is required');
-      if (form.title.length > 160) errors.push('Title must be 160 characters or less');
-      if (!form.description.trim()) errors.push('Description is required');
-      if (form.description.length > 8000) errors.push('Description must be 8000 characters or less');
-    } else if (cardType === 'character') {
-      if (!form.name.trim()) errors.push('Name is required');
-      if (form.name.length > 160) errors.push('Name must be 160 characters or less');
-      if (form.relationship_type.length > 200) errors.push('Relationship type must be 200 characters or less');
-      if (form.relationship_label && form.relationship_label.length > 200) errors.push('Custom label must be 200 characters or less');
-      if (!form.personality.trim()) errors.push('Personality is required');
-      if (form.personality.length > 8000) errors.push('Personality must be 8000 characters or less');
-    } else {
-      if (form.name && form.name.length > 160) errors.push('Name must be 160 characters or less');
-      if (form.personality && form.personality.length > 8000) errors.push('Personality must be 8000 characters or less');
-      if (form.background && form.background.length > 8000) errors.push('Background must be 8000 characters or less');
-      if (form.description && form.description.length > 8000) errors.push('Description must be 8000 characters or less');
-    }
+    if (!form.name?.trim()) errors.push('Name is required');
+    if (form.name && form.name.length > 160) errors.push('Name must be 160 characters or less');
+    if (form.ai_notes && form.ai_notes.length > 16000) errors.push('AI Notes must be 16000 characters or less');
+    if (form.user_notes && form.user_notes.length > 16000) errors.push('Your Notes must be 16000 characters or less');
 
     return errors;
   };
@@ -327,7 +268,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     setCreateError(null);
 
     try {
-      const cardData = { ...createForm, auto_update_enabled: true, is_pinned: false };
+      const cardData = { ...createForm };
       const response = await apiService.saveCard(createCardType, cardData);
 
       if (response.success) {
@@ -484,13 +425,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
   };
 
   const getInitialCreateForm = (cardType: CardType): Record<string, string> => {
-    if (cardType === 'world') {
-      return { title: '', description: '' };
-    } else if (cardType === 'character') {
-      return { name: '', relationship_type: '', relationship_label: '', personality: '' };
-    } else {
-      return { name: '', personality: '', background: '', description: '' };
-    }
+    return { name: '', ai_notes: '', user_notes: '' };
   };
 
   const handleStartCreate = (cardType: CardType) => {
@@ -515,13 +450,15 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     .filter((card) => {
       if (!debouncedSearchQuery) return true;
 
-      const name = card.card_type === 'world' ? card.payload?.title : (card.payload?.name || '');
-      const description = card.payload?.description || card.payload?.personality || '';
+      const name = card.payload?.name || '';
+      const aiNotes = card.payload?.ai_notes || '';
+      const userNotes = card.payload?.user_notes || '';
 
       const query = debouncedSearchQuery.toLowerCase();
       return (
         name.toLowerCase().includes(query) ||
-        description.toLowerCase().includes(query)
+        aiNotes.toLowerCase().includes(query) ||
+        userNotes.toLowerCase().includes(query)
       );
     });
 
@@ -537,19 +474,12 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
   });
 
   const getCardTitle = (card: Card): string => {
-    if (card.card_type === 'world') return card.payload?.title || 'Untitled Event';
-    if (card.card_type === 'character') return card.payload?.name || 'Unnamed Character';
-    return card.payload?.name || 'Self Card';
+    return card.payload?.name || (card.card_type === 'world' ? 'Untitled Event' : card.card_type === 'character' ? 'Unnamed Character' : 'Self Card');
   };
 
   const getCardSubtitle = (card: Card): string => {
-    if (card.card_type === 'character') return card.payload?.relationship_type || 'Relationship';
-    if (card.card_type === 'world') {
-      const desc = card.payload?.description || '';
-      return desc.length > 150 ? desc.substring(0, 150) + '...' : desc;
-    }
-    const desc = card.payload?.description || card.payload?.personality || '';
-    return desc.length > 150 ? desc.substring(0, 150) + '...' : desc;
+    const desc = card.payload?.ai_notes || '';
+    return desc.length > 150 ? desc.substring(0, 150) + '...' : desc || 'No notes yet';
   };
 
   const getEmptyStateMessage = (): string => {
