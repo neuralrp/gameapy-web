@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { Mic, Loader2, Volume2 } from 'lucide-react';
 
 export type VoiceButtonState = 'idle' | 'listening' | 'sending' | 'speaking';
@@ -17,25 +18,35 @@ export function HoldToTalkButton({
   onHoldEnd,
   disabled = false,
 }: HoldToTalkButtonProps) {
+  const isHoldingRef = useRef(false);
   const isInteractive = state === 'idle' && !disabled;
-  const isActive = state === 'listening';
   
   const handlePointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
     if (isInteractive) {
+      isHoldingRef.current = true;
       onHoldStart();
     }
   };
   
   const handlePointerUp = (e: React.PointerEvent) => {
     e.preventDefault();
-    if (isActive) {
+    if (isHoldingRef.current) {
+      isHoldingRef.current = false;
       onHoldEnd();
     }
   };
   
   const handlePointerLeave = () => {
-    if (isActive) {
+    if (isHoldingRef.current) {
+      isHoldingRef.current = false;
+      onHoldEnd();
+    }
+  };
+  
+  const handlePointerCancel = () => {
+    if (isHoldingRef.current) {
+      isHoldingRef.current = false;
       onHoldEnd();
     }
   };
@@ -105,6 +116,7 @@ export function HoldToTalkButton({
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerLeave}
+        onPointerCancel={handlePointerCancel}
         onContextMenu={(e) => e.preventDefault()}
         disabled={disabled || state === 'sending' || state === 'speaking'}
         aria-label={state === 'idle' ? 'Hold to talk' : state}
