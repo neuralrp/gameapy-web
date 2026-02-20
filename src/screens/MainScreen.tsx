@@ -90,6 +90,15 @@ export function MainScreen() {
           counselor_id: defaultPersonality.id,
         }) as APIResponse<{ session_id: number }>;
         if (response.success && response.data?.session_id) {
+          const sessionId = response.data.session_id;
+          
+          await apiService.playCardToTable(
+            sessionId,
+            'far_left',
+            'personality',
+            defaultPersonality.id
+          );
+          
           const counselor = {
             id: defaultPersonality.id,
             name: defaultPersonality.name,
@@ -121,8 +130,8 @@ export function MainScreen() {
             },
           };
           setCounselor(counselor);
-          setSessionId(response.data.session_id);
-          localStorage.setItem('gameapy_session_id', response.data.session_id.toString());
+          setSessionId(sessionId);
+          localStorage.setItem('gameapy_session_id', sessionId.toString());
         }
       }
     } catch (err) {

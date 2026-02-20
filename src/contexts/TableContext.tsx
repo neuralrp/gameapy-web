@@ -78,20 +78,29 @@ export function TableProvider({ children }: { children: ReactNode }) {
         draggedCard.card_id
       );
       
-      setSlots(prev => ({
-        ...prev,
-        [position]: {
-          session_id: sessionId,
-          slot_position: position,
-          card_type: draggedCard.card_type,
-          card_id: draggedCard.card_id,
-          card_data: draggedCard.card_data,
-        } as TableSlotCard,
-      }));
+      const newCard = {
+        session_id: sessionId,
+        slot_position: position,
+        card_type: draggedCard.card_type,
+        card_id: draggedCard.card_id,
+        card_data: draggedCard.card_data,
+      } as TableSlotCard;
       
-      if (position === 'far_left' && draggedCard.card_type === 'personality') {
-        const personality = await apiService.getPersonality(draggedCard.card_id);
-        setConversationPartner(personality);
+      setSlots(prev => {
+        const newSlots = {
+          ...prev,
+          [position]: newCard,
+        };
+        return newSlots;
+      });
+      
+      if (position === 'far_left') {
+        if (draggedCard.card_type === 'personality') {
+          const personality = await apiService.getPersonality(draggedCard.card_id);
+          setConversationPartner(personality);
+        } else if (draggedCard.card_type === 'character' || draggedCard.card_type === 'self') {
+          setConversationPartner(null);
+        }
       }
       
       setDraggedCard(null);

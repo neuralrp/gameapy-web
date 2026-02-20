@@ -47,7 +47,6 @@ function ChatScreenContent() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [activeConversationMode, setActiveConversationMode] = useState<ConversationMode>('advisory');
 
   useEffect(() => {
     startHealthChecks();
@@ -301,11 +300,7 @@ function ChatScreenContent() {
             );
             requestAnimationFrame(() => scrollToBottom());
           } else if (chunk.type === 'done' && chunk.data) {
-            const { cards_loaded, counselor_switched, new_counselor, conversation_mode } = chunk.data;
-
-            if (conversation_mode) {
-              setActiveConversationMode(conversation_mode);
-            }
+            const { cards_loaded, counselor_switched, new_counselor } = chunk.data;
 
             setMessages(prev =>
               prev.map(msg =>
@@ -390,10 +385,6 @@ function ChatScreenContent() {
           );
           requestAnimationFrame(() => scrollToBottom());
         } else if (chunk.type === 'done' && chunk.data) {
-          const { conversation_mode } = chunk.data;
-          if (conversation_mode) {
-            setActiveConversationMode(conversation_mode);
-          }
         } else if (chunk.type === 'error') {
           throw new Error(chunk.error || 'Stream error occurred');
         }
@@ -579,7 +570,7 @@ function ChatScreenContent() {
             const showKeepGoing = isLastMessage &&
                                    message.role === 'assistant' &&
                                    message.content &&
-                                   activeConversationMode === 'three_way' &&
+                                    conversationMode === 'three_way' &&
                                    !isLoading;
             
             return (
