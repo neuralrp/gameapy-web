@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowUp, LayoutGrid, Play, X } from 'lucide-react';
+import { ArrowLeft, ArrowUp, LayoutGrid, Play, X, Headphones, HeadphoneOff } from 'lucide-react';
 import { CounselorInfoModal } from '../components/counselor/CounselorInfoModal';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { HealthStatusIcon } from '../components/shared/HealthStatusIcon';
@@ -9,7 +9,10 @@ import { CardHand } from '../components/cards/CardHand';
 import { VoiceInputButton } from '../components/chat/VoiceInputButton';
 import { VoiceTranscript } from '../components/chat/VoiceTranscript';
 import { SpeakButton } from '../components/chat/SpeakButton';
+import { HoldToTalkButton } from '../components/chat/HoldToTalkButton';
+import type { VoiceButtonState } from '../components/chat/HoldToTalkButton';
 import { useVoiceInput } from '../hooks/useVoiceInput';
+import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
 import { TableProvider, useTable } from '../contexts/TableContext';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
@@ -51,10 +54,14 @@ function ChatScreenContent() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
   const [voiceInterim, setVoiceInterim] = useState('');
+  const [talkMode, setTalkMode] = useState(false);
+  const [voiceButtonState, setVoiceButtonState] = useState<VoiceButtonState>('idle');
+  const [lastAssistantContent, setLastAssistantContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  const { isListening, transcript, interimTranscript, resetTranscript } = useVoiceInput();
+  const { isListening, transcript, interimTranscript, startListening, stopListening, resetTranscript } = useVoiceInput();
+  const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported } = useSpeechSynthesis();
 
   useEffect(() => {
     startHealthChecks();
@@ -102,6 +109,30 @@ function ChatScreenContent() {
       setInput(transcript + interimTranscript);
     }
   }, [transcript, interimTranscript]);
+
+  useEffect(() => {
+    if (isSpeaking) {
+      setVoiceButtonState('speaking');
+    } else if (isLoading) {
+      setVoiceButtonState('sending');
+    } else if (isListening) {
+      setVoiceButtonState('listening');
+    } else {
+      setVoiceButtonState('idle');
+    }
+  }, [isSpeaking, isLoading, isListening]);
+
+  useEffect(() => {
+    if (talkMode && lastAssistantContent && !isSpeaking && !isLoading) {
+      speak(lastAssistantContent);
+    }
+  }, [lastAssistantContent, talkMode, isSpeaking, isLoading, speak]);
+
+  useEffect(() => {
+    if (!talkMode) {
+      stopSpeaking();
+    }
+  }, [talkMode, stopSpeaking]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -361,6 +392,10 @@ function ChatScreenContent() {
           }
         }
 
+        if (fullContent) {
+          setLastAssistantContent(fullContent);
+        }
+
         break;
         } catch (err) {
           retries++;
@@ -437,6 +472,32 @@ function ChatScreenContent() {
     setVoiceInterim('');
     setInput('');
     resetTranscript();
+  };
+
+  const handleHoldStart = async () => {
+    setVoiceTranscript('');
+    setVoiceInterim('');
+    setInput('');
+    resetTranscript();
+    await startListening();
+  };
+
+  const handleHoldEnd = () => {
+    stopListening();
+    if (transcript.trim()) {
+      setInput(transcript.trim());
+      setTimeout(() => {
+        handleSend();
+      }, 100);
+    }
+    resetTranscript();
+  };
+
+  const toggleTalkMode = () => {
+    if (talkMode) {
+      stopSpeaking();
+    }
+    setTalkMode(!talkMode);
   };
 
   if (clientLoading) {
@@ -524,6 +585,17 @@ function ChatScreenContent() {
         >
           <LayoutGrid className="w-6 h-6" />
         </button>
+        {ttsSupported && (
+          <button
+            onClick={toggleTalkMode}
+            className={`min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors ${talkMode ? 'text-green-400' : ''}`}
+            style={{ color: talkMode ? undefined : chatTextColor }}
+            aria-label={talkMode ? 'Turn off Talk Mode' : 'Turn on Talk Mode'}
+            title={talkMode ? 'Turn off Talk Mode' : 'Turn on Talk Mode'}
+          >
+            {talkMode ? <Headphones className="w-6 h-6" /> : <HeadphoneOff className="w-6 h-6" />}
+          </button>
+        )}
         <HealthStatusIcon onClick={() => setShowHealthModal(true)} />
       </header>
 
@@ -686,54 +758,68 @@ function ChatScreenContent() {
           opacity: 0.95
         }}
       >
-        {(voiceTranscript || voiceInterim) && (
-          <VoiceTranscript
-            transcript={voiceTranscript}
-            interimTranscript={voiceInterim}
-            onCancel={handleVoiceCancel}
-            textColor={chatTextColor}
-          />
+        {talkMode ? (
+          <div className="flex flex-col items-center justify-center py-4">
+            <HoldToTalkButton
+              state={voiceButtonState}
+              transcript={voiceTranscript + voiceInterim}
+              onHoldStart={handleHoldStart}
+              onHoldEnd={handleHoldEnd}
+              disabled={!sessionId}
+            />
+          </div>
+        ) : (
+          <>
+            {(voiceTranscript || voiceInterim) && (
+              <VoiceTranscript
+                transcript={voiceTranscript}
+                interimTranscript={voiceInterim}
+                onCancel={handleVoiceCancel}
+                textColor={chatTextColor}
+              />
+            )}
+            <div className="flex gap-3 items-end">
+              <VoiceInputButton
+                onTranscriptReady={handleVoiceTranscriptReady}
+                accentColor={activeVisuals?.borderColor || '#5C6B4A'}
+                disabled={isLoading || !sessionId}
+              />
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  adjustTextareaHeight();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                    if (textareaRef.current) {
+                      textareaRef.current.style.height = 'auto';
+                    }
+                  }
+                }}
+                placeholder={isListening ? "Listening..." : "Type your message..."}
+                className="input-bubble flex-1 px-4 py-3 font-sans bg-white min-h-[44px] resize-none overflow-hidden"
+                style={{ color: '#000000' }}
+                disabled={isLoading || !sessionId}
+                rows={1}
+              />
+              <button
+                onClick={handleSend}
+                disabled={!input.trim() || isLoading || !sessionId}
+                className="send-button min-h-[44px] min-w-[44px]"
+                style={{
+                  backgroundColor: `${activeVisuals?.borderColor || '#5C6B4A'} !important`
+                }}
+                aria-label="Send message"
+              >
+                <ArrowUp className="w-5 h-5 text-white" />
+              </button>
+            </div>
+          </>
         )}
-        <div className="flex gap-3 items-end">
-          <VoiceInputButton
-            onTranscriptReady={handleVoiceTranscriptReady}
-            accentColor={activeVisuals?.borderColor || '#5C6B4A'}
-            disabled={isLoading || !sessionId}
-          />
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              adjustTextareaHeight();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-                if (textareaRef.current) {
-                  textareaRef.current.style.height = 'auto';
-                }
-              }
-            }}
-            placeholder={isListening ? "Listening..." : "Type your message..."}
-            className="input-bubble flex-1 px-4 py-3 font-sans bg-white min-h-[44px] resize-none overflow-hidden"
-            style={{ color: '#000000' }}
-            disabled={isLoading || !sessionId}
-            rows={1}
-          />
-          <button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading || !sessionId}
-            className="send-button min-h-[44px] min-w-[44px]"
-            style={{
-              backgroundColor: `${activeVisuals?.borderColor || '#5C6B4A'} !important`
-            }}
-            aria-label="Send message"
-          >
-            <ArrowUp className="w-5 h-5 text-white" />
-          </button>
-        </div>
         {!sessionId && (
           <p
             className="mt-2 text-xs font-sans opacity-50 text-center"
