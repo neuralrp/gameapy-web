@@ -106,7 +106,7 @@ export function HoldToTalkButton({
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerLeave}
         onContextMenu={(e) => e.preventDefault()}
-        disabled={disabled || state !== 'idle'}
+        disabled={disabled || state === 'sending' || state === 'speaking'}
         aria-label={state === 'idle' ? 'Hold to talk' : state}
       >
         {getButtonContent()}
