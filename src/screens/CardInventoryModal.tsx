@@ -27,11 +27,7 @@ function getCardFields(card: Card): Array<{ label: string; value: string; key: s
   const payload = card.payload || {};
   const fields: Array<{ label: string; value: string; key: string }> = [];
 
-  if (card.card_type === 'world') {
-    fields.push({ label: 'Title', value: payload.name || payload.title || '', key: 'name' });
-  } else {
-    fields.push({ label: 'Name', value: payload.name || '', key: 'name' });
-  }
+  fields.push({ label: 'Name', value: payload.name || '', key: 'name' });
 
   if (payload.ai_notes) {
     fields.push({ label: 'AI Notes', value: payload.ai_notes, key: 'ai_notes' });
@@ -702,14 +698,9 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                       </div>
                       <p className="font-sans text-sm text-gray-500 line-clamp-2">
                         {getCardSubtitle(card)}
-                      </p>
-                      {card.auto_update_enabled && (
-                        <span className="badge badge-auto mt-2" title="Auto-update enabled">
-                          🤖 Auto-update
-                        </span>
-                      )}
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-3" />
+                       </p>
+                     </div>
+                     <ChevronRight className="w-5 h-5 text-gray-400 flex-shrink-0 ml-3" />
                   </div>
                 </div>
               ))}
@@ -824,6 +815,25 @@ function CardDetailView({
           </div>
         </button>
       )}
+
+      <div className="card-detail-section">
+        <div className="flex items-center justify-between py-2">
+          <div className="flex items-center gap-3">
+            <span className="text-xl">📌</span>
+            <div>
+              <div className="font-medium text-gray-900">Pinned</div>
+              <div className="text-sm text-gray-500">Always load in context</div>
+            </div>
+          </div>
+          <input
+            type="checkbox"
+            className="toggle-switch"
+            checked={card.is_pinned}
+            onChange={onTogglePin}
+            disabled={toggling}
+          />
+        </div>
+      </div>
 
       <div className="pt-2">
         <button
