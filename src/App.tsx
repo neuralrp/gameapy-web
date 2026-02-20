@@ -1,12 +1,10 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './contexts/AppContext';
-import { FarmProvider } from './contexts/FarmContext';
 import { MainScreen } from './screens/MainScreen';
 import { ChatScreen } from './screens/ChatScreen';
 import { CardInventoryModal } from './screens/CardInventoryModal';
 import { AdvisorCreatorScreen } from './screens/AdvisorCreatorScreen';
 import { LoginScreen } from './screens/LoginScreen';
-import { FarmScreen } from './screens/FarmScreen';
 import { FriendsScreen } from './screens/FriendsScreen';
 import { Toast } from './components/shared/Toast';
 
@@ -44,7 +42,6 @@ function AppContent() {
       <Routes>
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="/create-advisor" element={<AdvisorCreatorScreen />} />
-        <Route path="/farm" element={<FarmScreen />} />
         <Route path="/friends" element={<FriendsScreen onBack={() => window.history.back()} />} />
         <Route path="/*" element={
           showInventoryFullScreen ? (
@@ -74,9 +71,7 @@ function AppContent() {
 function App() {
   return (
     <AppProvider>
-      <FarmProvider>
-        <AppContent />
-      </FarmProvider>
+      <AppContent />
     </AppProvider>
   );
 }
