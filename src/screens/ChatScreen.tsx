@@ -56,7 +56,6 @@ function ChatScreenContent() {
   const [voiceInterim, setVoiceInterim] = useState('');
   const [talkMode, setTalkMode] = useState(false);
   const [voiceButtonState, setVoiceButtonState] = useState<VoiceButtonState>('idle');
-  const [lastAssistantContent, setLastAssistantContent] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
@@ -121,12 +120,6 @@ function ChatScreenContent() {
       setVoiceButtonState('idle');
     }
   }, [isSpeaking, isLoading, isListening]);
-
-  useEffect(() => {
-    if (talkMode && lastAssistantContent && !isSpeaking && !isLoading) {
-      speak(lastAssistantContent);
-    }
-  }, [lastAssistantContent, talkMode, isSpeaking, isLoading, speak]);
 
   useEffect(() => {
     if (!talkMode) {
@@ -322,6 +315,7 @@ function ChatScreenContent() {
 
     let retries = 0;
     const maxRetries = 3;
+    let fullContent = '';
 
     while (retries < maxRetries) {
       try {
@@ -333,7 +327,7 @@ function ChatScreenContent() {
           },
         });
 
-        let fullContent = '';
+        fullContent = '';
 
         for await (const chunk of stream) {
           if (chunk.type === 'content' && chunk.content) {
@@ -392,10 +386,6 @@ function ChatScreenContent() {
           }
         }
 
-        if (fullContent) {
-          setLastAssistantContent(fullContent);
-        }
-
         break;
         } catch (err) {
           retries++;
@@ -407,6 +397,9 @@ function ChatScreenContent() {
       }
 
     setIsLoading(false);
+    if (talkMode && fullContent && ttsSupported) {
+      speak(fullContent);
+    }
   };
 
   const handleKeepGoing = async () => {
@@ -423,6 +416,8 @@ function ChatScreenContent() {
     };
     setMessages(prev => [...prev, assistantMessage]);
 
+    let fullContent = '';
+
     try {
       const stream = apiService.sendMessageStream({
         session_id: sessionId,
@@ -431,8 +426,6 @@ function ChatScreenContent() {
           content: '[CONTINUE]',
         },
       });
-
-      let fullContent = '';
 
       for await (const chunk of stream) {
         if (chunk.type === 'content' && chunk.content) {
@@ -456,6 +449,9 @@ function ChatScreenContent() {
       }
 
     setIsLoading(false);
+    if (talkMode && fullContent && ttsSupported) {
+      speak(fullContent);
+    }
   };
 
   const handleVoiceTranscriptReady = (text: string) => {
