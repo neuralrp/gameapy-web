@@ -11,7 +11,7 @@ import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
 import type { Message } from '../types/message';
 import type { Counselor } from '../types/counselor';
-import type { HandCard, TableSlotPosition, ConversationMode } from '../types/card';
+import type { HandCard, TableSlotPosition } from '../types/card';
 
 export function ChatScreen() {
   return (
