@@ -330,6 +330,16 @@ function ChatScreenContent() {
               });
             }
 
+            const mentionsDetected = chunk.data.mentions_detected;
+            if (mentionsDetected && mentionsDetected.length > 0) {
+              const names = mentionsDetected.map((m: { card_name: string }) => m.card_name).join(', ');
+              const cardWord = mentionsDetected.length === 1 ? 'card' : 'cards';
+              showToast({
+                message: `${mentionsDetected.length} ${cardWord} added: ${names}`,
+                type: 'success',
+              });
+            }
+
           } else if (chunk.type === 'error') {
             throw new Error(chunk.error || 'Stream error occurred');
           }
