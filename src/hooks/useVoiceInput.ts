@@ -37,6 +37,7 @@ export interface UseVoiceInputReturn {
   interimTranscript: string;
   error: string | null;
   hasPermission: boolean | null;
+  requestPermission: () => Promise<boolean>;
   startListening: () => Promise<void>;
   stopListening: () => void;
   stopListeningAndGetResult: (callback: (finalTranscript: string) => void) => void;
@@ -212,6 +213,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
     interimTranscript,
     error,
     hasPermission,
+    requestPermission,
     startListening,
     stopListening,
     stopListeningAndGetResult,

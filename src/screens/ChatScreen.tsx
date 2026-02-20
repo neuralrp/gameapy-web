@@ -56,10 +56,11 @@ function ChatScreenContent() {
   const [voiceInterim, setVoiceInterim] = useState('');
   const [talkMode, setTalkMode] = useState(false);
   const [voiceButtonState, setVoiceButtonState] = useState<VoiceButtonState>('idle');
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  const { isListening, transcript, interimTranscript, startListening, stopListeningAndGetResult, resetTranscript } = useVoiceInput();
+  const { isListening, hasPermission, requestPermission, transcript, interimTranscript, startListening, stopListeningAndGetResult, resetTranscript } = useVoiceInput();
   const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported } = useSpeechSynthesis();
 
   useEffect(() => {
@@ -126,6 +127,19 @@ function ChatScreenContent() {
       stopSpeaking();
     }
   }, [talkMode, stopSpeaking]);
+
+  useEffect(() => {
+    if (talkMode && hasPermission === null) {
+      setIsRequestingPermission(true);
+      requestPermission().then((granted) => {
+        setIsRequestingPermission(false);
+        if (!granted) {
+          showToast({ message: 'Microphone permission denied. Please enable it in browser settings.', type: 'error' });
+          setTalkMode(false);
+        }
+      });
+    }
+  }, [talkMode, hasPermission, requestPermission]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -758,12 +772,15 @@ function ChatScreenContent() {
         {talkMode ? (
           <div className="flex flex-col items-center justify-center py-4">
             <HoldToTalkButton
-              state={voiceButtonState}
+              state={isRequestingPermission ? 'sending' : voiceButtonState}
               transcript={voiceTranscript + voiceInterim}
               onHoldStart={handleHoldStart}
               onHoldEnd={handleHoldEnd}
-              disabled={!sessionId}
+              disabled={!sessionId || isRequestingPermission}
             />
+            {isRequestingPermission && (
+              <p className="text-white/60 text-sm mt-2">Requesting microphone access...</p>
+            )}
           </div>
         ) : (
           <>

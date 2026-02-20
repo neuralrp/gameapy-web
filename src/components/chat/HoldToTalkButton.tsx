@@ -64,7 +64,9 @@ export function HoldToTalkButton({
         return (
           <>
             <Loader2 className="w-12 h-12 text-white animate-spin" />
-            <span className="text-white font-medium mt-2">SENDING...</span>
+            <span className="text-white font-medium mt-2">
+              {disabled ? 'REQUESTING...' : 'SENDING...'}
+            </span>
           </>
         );
       case 'speaking':
