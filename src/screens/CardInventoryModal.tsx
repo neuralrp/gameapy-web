@@ -246,7 +246,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     setHasUnsavedChanges(false);
   };
 
-  const validateForm = (cardType: CardType, form: Record<string, string>): string[] => {
+  const validateForm = (_cardType: CardType, form: Record<string, string>): string[] => {
     const errors: string[] = [];
 
     if (!form.name?.trim()) errors.push('Name is required');
@@ -424,7 +424,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     }
   };
 
-  const getInitialCreateForm = (cardType: CardType): Record<string, string> => {
+  const getInitialCreateForm = (_cardType: CardType): Record<string, string> => {
     return { name: '', ai_notes: '', user_notes: '' };
   };
 
@@ -580,7 +580,6 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
           ) : selectedCard ? (
             isEditing ? (
               <CardEditForm
-                card={selectedCard}
                 form={editForm}
                 onChange={handleFormChange}
                 onSave={handleSave}
@@ -594,7 +593,6 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                 card={selectedCard}
                 onEdit={() => handleEdit(selectedCard)}
                 onTogglePin={() => handleTogglePin(selectedCard)}
-                onToggleAutoUpdate={() => handleToggleAutoUpdate(selectedCard)}
                 toggling={togglingCardId === selectedCard.id}
                 counselorColor={counselorColor}
                 onOpenImageGenerator={handleOpenImageGenerator}
@@ -753,7 +751,6 @@ function CardDetailView({
   card,
   onEdit,
   onTogglePin,
-  onToggleAutoUpdate,
   toggling,
   counselorColor,
   onOpenImageGenerator,
@@ -762,14 +759,13 @@ function CardDetailView({
   card: Card;
   onEdit: () => void;
   onTogglePin: () => void;
-  onToggleAutoUpdate: () => void;
   toggling: boolean;
   counselorColor: string;
   onOpenImageGenerator?: () => void;
   imageRemaining?: number;
 }) {
   const fields = getCardFields(card);
-  const hasImage = card.payload?.image_data;
+  const hasImage = (card.payload as any)?.image_data;
   const canGenerateImage = imageRemaining !== undefined && imageRemaining > 0;
 
   return (
@@ -778,8 +774,8 @@ function CardDetailView({
         <div className="card-detail-section">
           <div className="flex justify-center mb-4">
             <img 
-              src={card.payload.image_data} 
-              alt={card.payload?.name || card.payload?.title || 'Card'}
+              src={(card.payload as any).image_data} 
+              alt={card.payload?.name || 'Card'}
               className="w-64 h-64 object-cover rounded-xl shadow-md"
             />
           </div>
@@ -829,44 +825,6 @@ function CardDetailView({
         </button>
       )}
 
-      <div className="card-detail-section">
-        <div className="flex items-center justify-between py-2">
-          <div className="flex items-center gap-3">
-            <span className="text-xl">📌</span>
-            <div>
-              <div className="font-medium text-gray-900">Pin this card</div>
-              <div className="text-sm text-gray-500">Always load in conversation context</div>
-            </div>
-          </div>
-          <input
-            type="checkbox"
-            className="toggle-switch"
-            checked={card.is_pinned}
-            onChange={onTogglePin}
-            disabled={toggling}
-          />
-        </div>
-      </div>
-
-      <div className="card-detail-section">
-        <div className="flex items-center justify-between py-2">
-          <div className="flex items-center gap-3">
-            <span className="text-xl">🤖</span>
-            <div>
-              <div className="font-medium text-gray-900">Auto-update</div>
-              <div className="text-sm text-gray-500">Let AI update this card</div>
-            </div>
-          </div>
-          <input
-            type="checkbox"
-            className="toggle-switch"
-            checked={card.auto_update_enabled}
-            onChange={onToggleAutoUpdate}
-            disabled={toggling}
-          />
-        </div>
-      </div>
-
       <div className="pt-2">
         <button
           onClick={onEdit}
@@ -887,7 +845,6 @@ function CardDetailView({
 }
 
 function CardEditForm({
-  card,
   form,
   onChange,
   onSave,
@@ -896,7 +853,6 @@ function CardEditForm({
   error,
   counselorColor,
 }: {
-  card: Card;
   form: Record<string, string>;
   onChange: (field: string, value: string) => void;
   onSave: () => void;
@@ -914,147 +870,58 @@ function CardEditForm({
       )}
 
       <div className="card-detail-section">
-        {card.card_type === 'world' && (
-          <div className="mb-4">
-            <label className="card-detail-label">
-              Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.title || ''}
-              onChange={(e) => onChange('title', e.target.value)}
-              maxLength={160}
-              className="card-input"
-              placeholder="Create a card for anything..."
-            />
-            <div className="text-xs text-gray-400 text-right mt-1">
-              {form.title?.length || 0} / 160
-            </div>
+        <div className="mb-4">
+          <label className="card-detail-label">
+            Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={form.name || ''}
+            onChange={(e) => onChange('name', e.target.value)}
+            maxLength={160}
+            className="card-input"
+            placeholder="Enter a name..."
+          />
+          <div className="text-xs text-gray-400 text-right mt-1">
+            {form.name?.length || 0} / 160
           </div>
-        )}
+        </div>
 
-        {card.card_type === 'character' && (
-          <>
-            <div className="mb-4">
-              <label className="card-detail-label">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={form.name || ''}
-                onChange={(e) => onChange('name', e.target.value)}
-                maxLength={160}
-                className="card-input"
-                placeholder="Character name..."
-              />
-              <div className="text-xs text-gray-400 text-right mt-1">
-                {form.name?.length || 0} / 160
-              </div>
-            </div>
-
-            <div>
-              <label className="card-detail-label">Relationship</label>
-              <input
-                type="text"
-                value={form.relationship_type || ''}
-                onChange={(e) => onChange('relationship_type', e.target.value)}
-                maxLength={200}
-                className="card-input"
-                placeholder="e.g., Family, Friend, Colleague..."
-              />
-              <div className="text-xs text-gray-400 text-right mt-1">
-                {form.relationship_type?.length || 0} / 200
-              </div>
-            </div>
-
-            <div>
-              <label className="card-detail-label">Custom Label (Optional)</label>
-              <input
-                type="text"
-                value={form.relationship_label || ''}
-                onChange={(e) => onChange('relationship_label', e.target.value)}
-                maxLength={200}
-                className="card-input"
-                placeholder="e.g., Sister, Mother, Best Friend..."
-              />
-              <div className="text-xs text-gray-400 text-right mt-1">
-                {form.relationship_label?.length || 0} / 200
-              </div>
-            </div>
-          </>
-        )}
-
-        {card.card_type === 'self' && form.name !== undefined && (
-          <div>
-            <label className="card-detail-label">Name</label>
-            <input
-              type="text"
-              value={form.name || ''}
-              onChange={(e) => onChange('name', e.target.value)}
-              maxLength={160}
-              className="card-input"
-              placeholder="Your name..."
-            />
-            <div className="text-xs text-gray-400 text-right mt-1">
-              {form.name?.length || 0} / 160
-            </div>
+        <div className="mt-4">
+          <label className="card-detail-label">
+            🤖 AI Notes
+            <span className="text-xs text-gray-400 ml-2">(Refreshes at session end)</span>
+          </label>
+          <textarea
+            value={form.ai_notes || ''}
+            onChange={(e) => onChange('ai_notes', e.target.value)}
+            maxLength={16000}
+            rows={6}
+            className="card-textarea"
+            placeholder="AI's understanding of this entity..."
+          />
+          <div className="text-xs text-gray-400 text-right mt-1">
+            {form.ai_notes?.length || 0} / 16000
           </div>
-        )}
+        </div>
 
-        {(card.card_type === 'character' || card.card_type === 'self') && (
-          <div className="mt-4">
-            <label className="card-detail-label">
-              Personality {card.card_type === 'character' && <span className="text-red-500">*</span>}
-            </label>
-            <textarea
-              value={form.personality || ''}
-              onChange={(e) => onChange('personality', e.target.value)}
-              maxLength={8000}
-              rows={4}
-              className="card-textarea"
-              placeholder="Describe their personality..."
-            />
-            <div className="text-xs text-gray-400 text-right mt-1">
-              {form.personality?.length || 0} / 8000
-            </div>
+        <div className="mt-4">
+          <label className="card-detail-label">
+            📝 Your Notes
+            <span className="text-xs text-gray-400 ml-2">(Private, never touched by AI)</span>
+          </label>
+          <textarea
+            value={form.user_notes || ''}
+            onChange={(e) => onChange('user_notes', e.target.value)}
+            maxLength={16000}
+            rows={4}
+            className="card-textarea"
+            placeholder="Your personal notes..."
+          />
+          <div className="text-xs text-gray-400 text-right mt-1">
+            {form.user_notes?.length || 0} / 16000
           </div>
-        )}
-
-        {card.card_type === 'self' && form.background !== undefined && (
-          <div className="mt-4">
-            <label className="card-detail-label">Background</label>
-            <textarea
-              value={form.background || ''}
-              onChange={(e) => onChange('background', e.target.value)}
-              maxLength={8000}
-              rows={3}
-              className="card-textarea"
-              placeholder="Your background..."
-            />
-            <div className="text-xs text-gray-400 text-right mt-1">
-              {form.background?.length || 0} / 8000
-            </div>
-          </div>
-        )}
-
-        {(card.card_type === 'world' || card.card_type === 'self') && form.description !== undefined && (
-          <div className="mt-4">
-            <label className="card-detail-label">
-              Description {card.card_type === 'world' && <span className="text-red-500">*</span>}
-            </label>
-            <textarea
-              value={form.description || ''}
-              onChange={(e) => onChange('description', e.target.value)}
-              maxLength={8000}
-              rows={6}
-              className="card-textarea"
-              placeholder="Describe in detail..."
-            />
-            <div className="text-xs text-gray-400 text-right mt-1">
-              {form.description?.length || 0} / 8000
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
       <div className="flex gap-3 pt-2">
@@ -1124,147 +991,52 @@ function CardCreateForm({
       </div>
 
       <div className="card-detail-section">
-        {cardType === 'world' && (
-          <div className="mb-4">
-            <label className="card-detail-label">
-              Title <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.title || ''}
-              onChange={(e) => onChange('title', e.target.value)}
-              maxLength={160}
-              className="card-input"
-              placeholder="Create a card for anything..."
-            />
-            <div className="text-xs text-gray-400 text-right mt-1">
-              {form.title?.length || 0} / 160
-            </div>
+        <div className="mb-4">
+          <label className="card-detail-label">
+            Name <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={form.name || ''}
+            onChange={(e) => onChange('name', e.target.value)}
+            maxLength={160}
+            className="card-input"
+            placeholder={cardType === 'self' ? 'Your name...' : cardType === 'character' ? 'Character name...' : 'Topic title...'}
+          />
+          <div className="text-xs text-gray-400 text-right mt-1">
+            {form.name?.length || 0} / 160
           </div>
-        )}
+        </div>
 
-        {cardType === 'character' && (
-          <>
-            <div className="mb-4">
-              <label className="card-detail-label">
-                Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={form.name || ''}
-                onChange={(e) => onChange('name', e.target.value)}
-                maxLength={160}
-                className="card-input"
-                placeholder="Character name..."
-              />
-              <div className="text-xs text-gray-400 text-right mt-1">
-                {form.name?.length || 0} / 160
-              </div>
-            </div>
-
-            <div>
-              <label className="card-detail-label">Relationship</label>
-              <input
-                type="text"
-                value={form.relationship_type || ''}
-                onChange={(e) => onChange('relationship_type', e.target.value)}
-                maxLength={200}
-                className="card-input"
-                placeholder="e.g., Family, Friend, Colleague..."
-              />
-              <div className="text-xs text-gray-400 text-right mt-1">
-                {form.relationship_type?.length || 0} / 200
-              </div>
-            </div>
-
-            <div>
-              <label className="card-detail-label">Custom Label (Optional)</label>
-              <input
-                type="text"
-                value={form.relationship_label || ''}
-                onChange={(e) => onChange('relationship_label', e.target.value)}
-                maxLength={200}
-                className="card-input"
-                placeholder="e.g., Sister, Mother, Best Friend..."
-              />
-              <div className="text-xs text-gray-400 text-right mt-1">
-                {form.relationship_label?.length || 0} / 200
-              </div>
-            </div>
-          </>
-        )}
-
-        {cardType === 'self' && (
-          <div>
-            <label className="card-detail-label">Name</label>
-            <input
-              type="text"
-              value={form.name || ''}
-              onChange={(e) => onChange('name', e.target.value)}
-              maxLength={160}
-              className="card-input"
-              placeholder="Your name..."
-            />
-            <div className="text-xs text-gray-400 text-right mt-1">
-              {form.name?.length || 0} / 160
-            </div>
+        <div className="mt-4">
+          <label className="card-detail-label">🤖 AI Notes</label>
+          <textarea
+            value={form.ai_notes || ''}
+            onChange={(e) => onChange('ai_notes', e.target.value)}
+            maxLength={16000}
+            rows={6}
+            className="card-textarea"
+            placeholder="Initial notes about this entity..."
+          />
+          <div className="text-xs text-gray-400 text-right mt-1">
+            {form.ai_notes?.length || 0} / 16000
           </div>
-        )}
+        </div>
 
-        {(cardType === 'character' || cardType === 'self') && (
-          <div className="mt-4">
-            <label className="card-detail-label">
-              Personality {cardType === 'character' && <span className="text-red-500">*</span>}
-            </label>
-            <textarea
-              value={form.personality || ''}
-              onChange={(e) => onChange('personality', e.target.value)}
-              maxLength={8000}
-              rows={4}
-              className="card-textarea"
-              placeholder="Describe their personality..."
-            />
-            <div className="text-xs text-gray-400 text-right mt-1">
-              {form.personality?.length || 0} / 8000
-            </div>
+        <div className="mt-4">
+          <label className="card-detail-label">📝 Your Notes</label>
+          <textarea
+            value={form.user_notes || ''}
+            onChange={(e) => onChange('user_notes', e.target.value)}
+            maxLength={16000}
+            rows={4}
+            className="card-textarea"
+            placeholder="Your personal notes (private, never touched by AI)..."
+          />
+          <div className="text-xs text-gray-400 text-right mt-1">
+            {form.user_notes?.length || 0} / 16000
           </div>
-        )}
-
-        {cardType === 'self' && (
-          <div className="mt-4">
-            <label className="card-detail-label">Background</label>
-            <textarea
-              value={form.background || ''}
-              onChange={(e) => onChange('background', e.target.value)}
-              maxLength={8000}
-              rows={3}
-              className="card-textarea"
-              placeholder="Your background..."
-            />
-            <div className="text-xs text-gray-400 text-right mt-1">
-              {form.background?.length || 0} / 8000
-            </div>
-          </div>
-        )}
-
-        {(cardType === 'world' || cardType === 'self') && (
-          <div className="mt-4">
-            <label className="card-detail-label">
-              Description {cardType === 'world' && <span className="text-red-500">*</span>}
-            </label>
-            <textarea
-              value={form.description || ''}
-              onChange={(e) => onChange('description', e.target.value)}
-              maxLength={8000}
-              rows={6}
-              className="card-textarea"
-              placeholder="Describe in detail..."
-            />
-            <div className="text-xs text-gray-400 text-right mt-1">
-              {form.description?.length || 0} / 8000
-            </div>
-          </div>
-        )}
+        </div>
       </div>
 
       <div className="flex gap-3 pt-2">
