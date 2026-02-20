@@ -65,6 +65,12 @@ function ChatScreenContent() {
   const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported } = useSpeechSynthesis();
   const haptics = useHaptics();
 
+  const talkModeRef = useRef(talkMode);
+  const ttsSupportedRef = useRef(ttsSupported);
+
+  useEffect(() => { talkModeRef.current = talkMode; }, [talkMode]);
+  useEffect(() => { ttsSupportedRef.current = ttsSupported; }, [ttsSupported]);
+
   useEffect(() => {
     startHealthChecks();
     return () => {
@@ -113,16 +119,16 @@ function ChatScreenContent() {
   }, [transcript, interimTranscript]);
 
   useEffect(() => {
-    if (isSpeaking) {
-      setVoiceButtonState('speaking');
-    } else if (isLoading) {
-      setVoiceButtonState('sending');
-    } else if (isListening) {
+    if (isListening) {
       setVoiceButtonState('listening');
-    } else {
+    }
+  }, [isListening]);
+
+  useEffect(() => {
+    if (!isSpeaking && voiceButtonState === 'speaking') {
       setVoiceButtonState('idle');
     }
-  }, [isSpeaking, isLoading, isListening]);
+  }, [isSpeaking, voiceButtonState]);
 
   useEffect(() => {
     if (!talkMode) {
@@ -303,7 +309,7 @@ function ChatScreenContent() {
     }
   };
 
-  const handleSend = async (messageOverride?: string) => {
+  const handleSend = async (messageOverride?: string, autoSpeak: boolean = false) => {
     const messageText = (messageOverride ?? input).trim();
     if (!messageText || isLoading || !sessionId) return;
 
@@ -417,8 +423,12 @@ function ChatScreenContent() {
     if (fullContent) {
       haptics.success();
     }
-    if (talkMode && fullContent && ttsSupported) {
-      speak(fullContent);
+    
+    if (autoSpeak && fullContent && ttsSupportedRef.current) {
+      setVoiceButtonState('speaking');
+      setTimeout(() => speak(fullContent), 50);
+    } else {
+      setVoiceButtonState('idle');
     }
   };
 
@@ -472,8 +482,12 @@ function ChatScreenContent() {
     if (fullContent) {
       haptics.success();
     }
-    if (talkMode && fullContent && ttsSupported) {
-      speak(fullContent);
+    
+    if (talkModeRef.current && fullContent && ttsSupportedRef.current) {
+      setVoiceButtonState('speaking');
+      setTimeout(() => speak(fullContent), 50);
+    } else {
+      setVoiceButtonState('idle');
     }
   };
 
@@ -506,7 +520,9 @@ function ChatScreenContent() {
       if (text) {
         setVoiceButtonState('sending');
         resetTranscript();
-        handleSend(text);
+        handleSend(text, talkModeRef.current);
+      } else {
+        setVoiceButtonState('idle');
       }
     });
   };
