@@ -39,6 +39,7 @@ export interface UseVoiceInputReturn {
   hasPermission: boolean | null;
   startListening: () => Promise<void>;
   stopListening: () => void;
+  stopListeningAndGetResult: (callback: (finalTranscript: string) => void) => void;
   resetTranscript: () => void;
 }
 
@@ -50,6 +51,9 @@ export function useVoiceInput(): UseVoiceInputReturn {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const pendingResultCallbackRef = useRef<((transcript: string) => void) | null>(null);
+  const transcriptRef = useRef('');
+  const interimTranscriptRef = useRef('');
 
   const isSupported = typeof window !== 'undefined' && 
     (typeof window.SpeechRecognition !== 'undefined' || 
@@ -102,6 +106,9 @@ export function useVoiceInput(): UseVoiceInputReturn {
     setError(null);
     setTranscript('');
     setInterimTranscript('');
+    transcriptRef.current = '';
+    interimTranscriptRef.current = '';
+    pendingResultCallbackRef.current = null;
 
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognitionClass();
@@ -128,8 +135,13 @@ export function useVoiceInput(): UseVoiceInputReturn {
       }
 
       if (finalTranscript) {
-        setTranscript(prev => prev + finalTranscript);
+        setTranscript(prev => {
+          const updated = prev + finalTranscript;
+          transcriptRef.current = updated;
+          return updated;
+        });
       }
+      interimTranscriptRef.current = interim;
       setInterimTranscript(interim);
     };
 
@@ -147,6 +159,13 @@ export function useVoiceInput(): UseVoiceInputReturn {
     recognition.onend = () => {
       setIsListening(false);
       setInterimTranscript('');
+      
+      const finalResult = (transcriptRef.current + ' ' + interimTranscriptRef.current).trim();
+      if (pendingResultCallbackRef.current) {
+        pendingResultCallbackRef.current(finalResult);
+        pendingResultCallbackRef.current = null;
+      }
+      interimTranscriptRef.current = '';
     };
 
     recognitionRef.current = recognition;
@@ -167,11 +186,22 @@ export function useVoiceInput(): UseVoiceInputReturn {
     }
     setIsListening(false);
     setInterimTranscript('');
+    interimTranscriptRef.current = '';
+    pendingResultCallbackRef.current = null;
+  }, []);
+
+  const stopListeningAndGetResult = useCallback((callback: (finalTranscript: string) => void) => {
+    pendingResultCallbackRef.current = callback;
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+    }
   }, []);
 
   const resetTranscript = useCallback(() => {
     setTranscript('');
     setInterimTranscript('');
+    transcriptRef.current = '';
+    interimTranscriptRef.current = '';
     setError(null);
   }, []);
 
@@ -184,6 +214,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
     hasPermission,
     startListening,
     stopListening,
+    stopListeningAndGetResult,
     resetTranscript,
   };
 }

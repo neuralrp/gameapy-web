@@ -59,7 +59,7 @@ function ChatScreenContent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  const { isListening, transcript, interimTranscript, startListening, stopListening, resetTranscript } = useVoiceInput();
+  const { isListening, transcript, interimTranscript, startListening, stopListeningAndGetResult, resetTranscript } = useVoiceInput();
   const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported } = useSpeechSynthesis();
 
   useEffect(() => {
@@ -479,14 +479,15 @@ function ChatScreenContent() {
   };
 
   const handleHoldEnd = () => {
-    stopListening();
-    if (transcript.trim()) {
-      setInput(transcript.trim());
-      setTimeout(() => {
-        handleSend();
-      }, 100);
-    }
-    resetTranscript();
+    stopListeningAndGetResult((finalTranscript: string) => {
+      if (finalTranscript.trim()) {
+        setInput(finalTranscript.trim());
+        resetTranscript();
+        setTimeout(() => {
+          handleSend();
+        }, 50);
+      }
+    });
   };
 
   const toggleTalkMode = () => {
