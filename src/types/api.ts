@@ -169,6 +169,7 @@ export interface StreamChunk {
       topic_text: string;
     };
     conversation_mode?: ConversationMode;
+    mentions_detected?: Array<{ card_name: string; card_type: string }>;
   };
   error?: string;
 }

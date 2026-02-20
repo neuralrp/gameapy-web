@@ -6,6 +6,10 @@ import { HealthStatusIcon } from '../components/shared/HealthStatusIcon';
 import { HealthStatusModal } from '../components/shared/HealthStatusModal';
 import { GameTable } from '../components/table/GameTable';
 import { CardHand } from '../components/cards/CardHand';
+import { VoiceInputButton } from '../components/chat/VoiceInputButton';
+import { VoiceTranscript } from '../components/chat/VoiceTranscript';
+import { SpeakButton } from '../components/chat/SpeakButton';
+import { useVoiceInput } from '../hooks/useVoiceInput';
 import { TableProvider, useTable } from '../contexts/TableContext';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
@@ -45,8 +49,12 @@ function ChatScreenContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [showCounselorInfo, setShowCounselorInfo] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [voiceTranscript, setVoiceTranscript] = useState('');
+  const [voiceInterim, setVoiceInterim] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  const { isListening, transcript, interimTranscript, resetTranscript } = useVoiceInput();
 
   useEffect(() => {
     startHealthChecks();
@@ -86,6 +94,14 @@ function ChatScreenContent() {
   useEffect(() => {
     loadAllCards();
   }, [loadAllCards]);
+
+  useEffect(() => {
+    if (transcript || interimTranscript) {
+      setVoiceTranscript(transcript);
+      setVoiceInterim(interimTranscript);
+      setInput(transcript + interimTranscript);
+    }
+  }, [transcript, interimTranscript]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -259,6 +275,9 @@ function ChatScreenContent() {
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setVoiceTranscript('');
+    setVoiceInterim('');
+    resetTranscript();
     setIsLoading(true);
 
     const assistantMessageId = crypto.randomUUID();
@@ -402,6 +421,22 @@ function ChatScreenContent() {
       }
 
     setIsLoading(false);
+  };
+
+  const handleVoiceTranscriptReady = (text: string) => {
+    setInput(text);
+    setVoiceTranscript('');
+    setVoiceInterim('');
+    setTimeout(() => {
+      handleSend();
+    }, 100);
+  };
+
+  const handleVoiceCancel = () => {
+    setVoiceTranscript('');
+    setVoiceInterim('');
+    setInput('');
+    resetTranscript();
   };
 
   if (clientLoading) {
@@ -599,13 +634,21 @@ function ChatScreenContent() {
                             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
                           }
                         : {
-                          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-                        }
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                          }
                     }
                   >
                     <p className="font-sans text-base whitespace-pre-wrap">
                       {message.content}
                     </p>
+                    {message.role === 'assistant' && message.content && (
+                      <div className="flex justify-end mt-1">
+                        <SpeakButton 
+                          text={message.content} 
+                          accentColor={activeVisuals?.chatBubble.textColor || '#3D3426'}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
                 {showKeepGoing && (
@@ -643,7 +686,20 @@ function ChatScreenContent() {
           opacity: 0.95
         }}
       >
+        {(voiceTranscript || voiceInterim) && (
+          <VoiceTranscript
+            transcript={voiceTranscript}
+            interimTranscript={voiceInterim}
+            onCancel={handleVoiceCancel}
+            textColor={chatTextColor}
+          />
+        )}
         <div className="flex gap-3 items-end">
+          <VoiceInputButton
+            onTranscriptReady={handleVoiceTranscriptReady}
+            accentColor={activeVisuals?.borderColor || '#5C6B4A'}
+            disabled={isLoading || !sessionId}
+          />
           <textarea
             ref={textareaRef}
             value={input}
@@ -660,7 +716,7 @@ function ChatScreenContent() {
                 }
               }
             }}
-            placeholder="Type your message..."
+            placeholder={isListening ? "Listening..." : "Type your message..."}
             className="input-bubble flex-1 px-4 py-3 font-sans bg-white min-h-[44px] resize-none overflow-hidden"
             style={{ color: '#000000' }}
             disabled={isLoading || !sessionId}
