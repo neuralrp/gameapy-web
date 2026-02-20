@@ -5,6 +5,7 @@ import { apiService } from '../services/api';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { ErrorMessage } from '../components/shared/ErrorMessage';
 import { useDebounce } from '../hooks/useDebounce';
+import { ImageGeneratorModal } from '../components/images/ImageGeneratorModal';
 import type { Card, CardType } from '../types/card';
 import type { CustomAdvisor } from '../types/counselor';
 import { ArrowLeft, Search, ChevronRight, Settings, Plus, Trash2 } from 'lucide-react';
@@ -84,8 +85,8 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
   });
   const [savingAdvisor, setSavingAdvisor] = useState(false);
 
-  const [generatingImage, setGeneratingImage] = useState(false);
   const [imageRemaining, setImageRemaining] = useState<number | undefined>(undefined);
+  const [showImageGenerator, setShowImageGenerator] = useState(false);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -189,27 +190,17 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
     }
   };
 
-  const handleGenerateImage = async () => {
-    if (!selectedCard) return;
-    
-    setGeneratingImage(true);
-    try {
-      const response = await apiService.generateCardImage(
-        selectedCard.card_type as 'self' | 'character' | 'world' | 'universal',
-        selectedCard.id
-      );
-      
-      if (response.success) {
-        showToast({ message: 'Image generation started! Check back in a moment.', type: 'info' });
-        setImageRemaining(response.data?.remaining);
-      } else {
-        showToast({ message: response.message || 'Failed to generate image', type: 'error' });
+  const handleOpenImageGenerator = () => {
+    setShowImageGenerator(true);
+  };
+
+  const handleImageSaved = async () => {
+    await loadCards();
+    if (selectedCard) {
+      const updatedCard = cards.find(c => c.id === selectedCard.id);
+      if (updatedCard) {
+        setSelectedCard(updatedCard);
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to generate image';
-      showToast({ message: errorMessage, type: 'error' });
-    } finally {
-      setGeneratingImage(false);
     }
   };
 
@@ -676,8 +667,7 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
                 onToggleAutoUpdate={() => handleToggleAutoUpdate(selectedCard)}
                 toggling={togglingCardId === selectedCard.id}
                 counselorColor={counselorColor}
-                onGenerateImage={handleGenerateImage}
-                generatingImage={generatingImage}
+                onOpenImageGenerator={handleOpenImageGenerator}
                 imageRemaining={imageRemaining}
               />
             )
@@ -813,6 +803,18 @@ export function CardInventoryModal({ onClose, isFullScreen = false }: { onClose:
           )}
         </div>
       </div>
+
+      {showImageGenerator && selectedCard && (
+        <ImageGeneratorModal
+          isOpen={showImageGenerator}
+          onClose={() => setShowImageGenerator(false)}
+          cardType={selectedCard.card_type}
+          cardId={selectedCard.id}
+          onImageSaved={handleImageSaved}
+          imageRemaining={imageRemaining}
+          counselorColor={counselorColor}
+        />
+      )}
     </div>
   );
 }
@@ -824,8 +826,7 @@ function CardDetailView({
   onToggleAutoUpdate,
   toggling,
   counselorColor,
-  onGenerateImage,
-  generatingImage,
+  onOpenImageGenerator,
   imageRemaining,
 }: {
   card: Card;
@@ -834,8 +835,7 @@ function CardDetailView({
   onToggleAutoUpdate: () => void;
   toggling: boolean;
   counselorColor: string;
-  onGenerateImage?: () => void;
-  generatingImage?: boolean;
+  onOpenImageGenerator?: () => void;
   imageRemaining?: number;
 }) {
   const fields = getCardFields(card);
@@ -877,8 +877,12 @@ function CardDetailView({
         ))}
       </div>
 
-      {onGenerateImage && (
-        <div className="card-detail-section">
+      {onOpenImageGenerator && (
+        <button
+          onClick={onOpenImageGenerator}
+          disabled={!canGenerateImage}
+          className="card-detail-section w-full text-left cursor-pointer hover:bg-gray-50 transition-colors rounded-xl -mx-2 px-2 disabled:cursor-not-allowed disabled:opacity-50"
+        >
           <div className="flex items-center justify-between py-2">
             <div className="flex items-center gap-3">
               <span className="text-xl">🎨</span>
@@ -890,15 +894,9 @@ function CardDetailView({
                 </div>
               </div>
             </div>
-            <button
-              onClick={onGenerateImage}
-              disabled={generatingImage || !canGenerateImage}
-              className="px-3 py-1.5 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {generatingImage ? 'Generating...' : hasImage ? 'Regenerate' : 'Generate'}
-            </button>
+            <span className="text-gray-400 text-lg">›</span>
           </div>
-        </div>
+        </button>
       )}
 
       <div className="card-detail-section">
