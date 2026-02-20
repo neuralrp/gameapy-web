@@ -553,8 +553,8 @@ export class ApiService {
 
   async getUniversalCards(category?: string): Promise<APIResponse<any[]>> {
     const url = category
-      ? `/api/v1/universal-cards?category=${category}`
-      : '/api/v1/universal-cards';
+      ? `/api/v1/universal-cards/?category=${category}`
+      : '/api/v1/universal-cards/';
     return this.request(url);
   }
 
@@ -573,7 +573,7 @@ export class ApiService {
     card_json?: any;
     image_url?: string;
   }): Promise<APIResponse<any>> {
-    return this.request('/api/v1/universal-cards', {
+    return this.request('/api/v1/universal-cards/', {
       method: 'POST',
       body: JSON.stringify(data),
     });
