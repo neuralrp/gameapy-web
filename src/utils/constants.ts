@@ -20,4 +20,15 @@ export const API_ENDPOINTS = {
   clientCards: '/api/v1/cards',
   analyzeSession: (sessionId: number) => `/api/v1/sessions/${sessionId}/analyze`,
   health: '/health',
+  groups: {
+    create: '/api/v1/groups/create',
+    join: (code: string) => `/api/v1/groups/join/${code}`,
+    inviteInfo: (code: string) => `/api/v1/groups/invite/${code}/info`,
+    active: '/api/v1/groups/active',
+    details: (id: number) => `/api/v1/groups/${id}`,
+    leave: (id: number) => `/api/v1/groups/${id}/leave`,
+    participants: (id: number) => `/api/v1/groups/${id}/participants`,
+    messages: (id: number) => `/api/v1/groups/${id}/messages`,
+    chat: '/api/v1/groups/chat',
+  },
 } as const;

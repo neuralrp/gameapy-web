@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { Personality } from '../types/personality';
-import type { APIResponse } from '../types/api';
+import type { APIResponse, GroupSession, GroupParticipant } from '../types/api';
 import type { HealthCheck } from '../types/health';
 import type { SessionInfo } from '../types/api';
 import { apiService } from '../services/api';
@@ -9,6 +9,14 @@ import { apiService } from '../services/api';
 interface Toast {
   message: string;
   type: 'success' | 'error' | 'info';
+}
+
+interface GroupSessionState {
+  groupSession: GroupSession | null;
+  host: GroupParticipant | null;
+  guest: GroupParticipant | null;
+  isHost: boolean;
+  counselorId: number | null;
 }
 
 interface AppContextType {
@@ -49,6 +57,12 @@ interface AppContextType {
   resumeSession: (session: SessionInfo) => Promise<void>;
   endCurrentSession: () => Promise<void>;
   isResumingSession: boolean;
+  groupSessionState: GroupSessionState;
+  createGroupSession: (friendId: number, counselorId: number) => Promise<string | null>;
+  joinGroupSession: (inviteCode: string) => Promise<boolean>;
+  leaveGroupSession: () => Promise<void>;
+  loadActiveGroupSession: () => Promise<void>;
+  clearGroupSession: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -74,6 +88,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const healthIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [isResumingSession, setIsResumingSession] = useState(false);
+  const [groupSessionState, setGroupSessionState] = useState<GroupSessionState>({
+    groupSession: null,
+    host: null,
+    guest: null,
+    isHost: false,
+    counselorId: null,
+  });
 
   const calculateNextRetryDelay = () => {
     if (consecutiveHealthFailures === 0) {
@@ -120,6 +141,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       
       setAuthTokenState(token);
       setIsAuthenticated(true);
+      
+      await loadActiveGroupSession();
     } catch (error) {
       localStorage.removeItem('gameapy_auth_token');
       localStorage.removeItem('gameapy_client_id_int');
@@ -303,6 +326,102 @@ export function AppProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  const createGroupSession = async (friendId: number, counselorId: number): Promise<string | null> => {
+    try {
+      const response = await apiService.createGroupSession(friendId, counselorId);
+      if (response.success && response.data) {
+        const { group_session, invite_code } = response.data as any;
+        
+        const groupInfo = await apiService.getGroupSession(group_session.id);
+        const host = groupInfo.success && groupInfo.data ? groupInfo.data.host : null;
+        
+        setGroupSessionState({
+          groupSession: group_session,
+          host: host,
+          guest: null,
+          isHost: true,
+          counselorId: counselorId,
+        });
+        setSessionId(group_session.session_id);
+        localStorage.setItem('gameapy_session_id', group_session.session_id.toString());
+        return invite_code;
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to create group session:', error);
+      showToast({ message: 'Failed to create group session', type: 'error' });
+      return null;
+    }
+  };
+
+  const joinGroupSession = async (inviteCode: string): Promise<boolean> => {
+    try {
+      const response = await apiService.joinGroupSession(inviteCode);
+      if (response.success && response.data) {
+        const { group_session, host } = response.data as any;
+        setGroupSessionState({
+          groupSession: group_session,
+          host: host ? { id: host.id, name: host.name, username: host.username, role: 'host' } : null,
+          guest: null,
+          isHost: false,
+          counselorId: group_session.counselor_id,
+        });
+        setSessionId(group_session.session_id);
+        localStorage.setItem('gameapy_session_id', group_session.session_id.toString());
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Failed to join group session:', error);
+      showToast({ message: 'Failed to join group session', type: 'error' });
+      return false;
+    }
+  };
+
+  const leaveGroupSession = async () => {
+    if (!groupSessionState.groupSession) return;
+    
+    try {
+      await apiService.leaveGroupSession(groupSessionState.groupSession.id);
+      clearGroupSession();
+    } catch (error) {
+      console.error('Failed to leave group session:', error);
+      showToast({ message: 'Failed to leave group session', type: 'error' });
+    }
+  };
+
+  const loadActiveGroupSession = async () => {
+    try {
+      const response = await apiService.getActiveGroupSession();
+      if (response.success && response.data) {
+        const { group_session, host, guest, is_host } = response.data as any;
+        if (group_session) {
+          setGroupSessionState({
+            groupSession: group_session,
+            host: host ? { id: host.id, name: host.name, username: host.username, role: 'host' } : null,
+            guest: guest ? { id: guest.id, name: guest.name, username: guest.username, role: 'guest' } : null,
+            isHost: is_host,
+            counselorId: group_session.counselor_id,
+          });
+          setSessionId(group_session.session_id);
+          localStorage.setItem('gameapy_session_id', group_session.session_id.toString());
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load active group session:', error);
+    }
+  };
+
+  const clearGroupSession = () => {
+    setGroupSessionState({
+      groupSession: null,
+      host: null,
+      guest: null,
+      isHost: false,
+      counselorId: null,
+    });
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -343,6 +462,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
         resumeSession,
         endCurrentSession,
         isResumingSession,
+        groupSessionState,
+        createGroupSession,
+        joinGroupSession,
+        leaveGroupSession,
+        loadActiveGroupSession,
+        clearGroupSession,
       }}
     >
       {children}

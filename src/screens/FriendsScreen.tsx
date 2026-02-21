@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
+import { useApp } from '../contexts/AppContext';
+import { GroupInviteModal } from '../components/groups';
 
 interface Friend {
   id: number;
@@ -109,6 +111,8 @@ export const FriendsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [tradeFriend, setTradeFriend] = useState<Friend | null>(null);
+  const [groupInviteFriend, setGroupInviteFriend] = useState<Friend | null>(null);
+  const { counselor, groupSessionState } = useApp();
 
   useEffect(() => {
     loadData();
@@ -287,6 +291,14 @@ export const FriendsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                   </div>
                   <div className="flex gap-2">
                     <button
+                      onClick={() => setGroupInviteFriend(friend)}
+                      disabled={!counselor || !!groupSessionState.groupSession}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={!counselor ? 'Select a personality first' : groupSessionState.groupSession ? 'Already in a group session' : 'Start a group chat'}
+                    >
+                      Group Chat
+                    </button>
+                    <button
                       onClick={() => setTradeFriend(friend)}
                       className="px-3 py-1 bg-amber-600 hover:bg-amber-500 rounded text-sm transition-colors"
                     >
@@ -311,6 +323,16 @@ export const FriendsScreen: React.FC<{ onBack: () => void }> = ({ onBack }) => {
           friend={tradeFriend}
           onClose={() => setTradeFriend(null)}
           onSend={handleSendTrade}
+        />
+      )}
+
+      {groupInviteFriend && counselor && (
+        <GroupInviteModal
+          isOpen={true}
+          onClose={() => setGroupInviteFriend(null)}
+          friendId={groupInviteFriend.id}
+          friendName={groupInviteFriend.name || groupInviteFriend.username}
+          counselorId={counselor.id}
         />
       )}
     </div>

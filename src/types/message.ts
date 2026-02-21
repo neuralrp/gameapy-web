@@ -4,4 +4,6 @@ export interface Message {
   content: string;
   timestamp: string;
   cards_loaded?: number;
+  senderId?: number;
+  senderName?: string;
 }

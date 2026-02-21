@@ -772,6 +772,103 @@ export class ApiService {
       body: JSON.stringify({ image_data: imageData }),
     });
   }
+
+  // ============================================================
+  // Group Session Methods
+  // ============================================================
+
+  async createGroupSession(friendId: number, counselorId: number): Promise<APIResponse<{
+    group_session: any;
+    invite_code: string;
+  }>> {
+    return this.request('/api/v1/groups/create', {
+      method: 'POST',
+      body: JSON.stringify({ friend_id: friendId, counselor_id: counselorId }),
+    });
+  }
+
+  async joinGroupSession(inviteCode: string): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/groups/join/${inviteCode}`, {
+      method: 'POST',
+    });
+  }
+
+  async getGroupInviteInfo(inviteCode: string): Promise<APIResponse<{
+    group_session_id: number;
+    host: { name: string } | null;
+    counselor: { name: string } | null;
+  }>> {
+    return this.request(`/api/v1/groups/invite/${inviteCode}/info`);
+  }
+
+  async getGroupSession(groupId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/groups/${groupId}`);
+  }
+
+  async leaveGroupSession(groupId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/groups/${groupId}/leave`, {
+      method: 'POST',
+    });
+  }
+
+  async getActiveGroupSession(): Promise<APIResponse<any>> {
+    return this.request('/api/v1/groups/active');
+  }
+
+  async getGroupParticipants(groupId: number): Promise<APIResponse<any[]>> {
+    return this.request(`/api/v1/groups/${groupId}/participants`);
+  }
+
+  async *sendGroupChatStream(params: {
+    group_session_id: number;
+    content: string;
+    sender_name?: string;
+  }): AsyncGenerator<StreamChunk> {
+    const response = await fetch(`${this.baseUrl}/api/v1/groups/chat`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(this.authToken ? { 'Authorization': `Bearer ${this.authToken}` } : {}),
+      },
+      body: JSON.stringify(params),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('No response body');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            yield data as StreamChunk;
+          } catch (e) {
+            console.warn('Failed to parse SSE data:', line);
+          }
+        }
+      }
+    }
+  }
+
+  async getGroupMessages(groupId: number, limit: number = 50): Promise<APIResponse<any[]>> {
+    return this.request(`/api/v1/groups/${groupId}/messages?limit=${limit}`);
+  }
 }
 
 export const apiService = new ApiService();

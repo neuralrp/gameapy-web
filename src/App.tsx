@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { AppProvider, useApp } from './contexts/AppContext';
 import { SpeechSynthesisProvider } from './contexts/SpeechSynthesisContext';
 import { MainScreen } from './screens/MainScreen';
@@ -7,6 +7,7 @@ import { CardInventoryModal } from './screens/CardInventoryModal';
 import { AdvisorCreatorScreen } from './screens/AdvisorCreatorScreen';
 import { LoginScreen } from './screens/LoginScreen';
 import { FriendsScreen } from './screens/FriendsScreen';
+import { GroupJoinModal } from './components/groups';
 import { Toast } from './components/shared/Toast';
 
 function AppContent() {
@@ -44,6 +45,7 @@ function AppContent() {
         <Route path="/login" element={<Navigate to="/" replace />} />
         <Route path="/create-advisor" element={<AdvisorCreatorScreen />} />
         <Route path="/friends" element={<FriendsScreen onBack={() => window.history.back()} />} />
+        <Route path="/join/:inviteCode" element={<JoinGroupRoute />} />
         <Route path="/*" element={
           showInventoryFullScreen ? (
             <CardInventoryModal
@@ -66,6 +68,33 @@ function AppContent() {
         />
       )}
     </>
+  );
+}
+
+function JoinGroupRoute() {
+  const { inviteCode } = useParams<{ inviteCode: string }>();
+  const navigate = useNavigate();
+  const { showToast } = useApp();
+
+  const handleJoined = () => {
+    showToast({ message: 'Joined group chat!', type: 'success' });
+    navigate('/');
+  };
+
+  const handleCancelled = () => {
+    navigate('/');
+  };
+
+  if (!inviteCode) {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <GroupJoinModal
+      inviteCode={inviteCode}
+      onJoined={handleJoined}
+      onCancelled={handleCancelled}
+    />
   );
 }
 

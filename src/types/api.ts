@@ -173,3 +173,80 @@ export interface StreamChunk {
   };
   error?: string;
 }
+
+export interface GroupSession {
+  id: number;
+  session_id: number;
+  host_id: number;
+  guest_id: number | null;
+  counselor_id: number;
+  invite_code: string;
+  status: 'waiting' | 'active' | 'ended';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GroupParticipant {
+  id: number;
+  name: string;
+  username: string;
+  role: 'host' | 'guest';
+}
+
+export interface CreateGroupRequest {
+  friend_id: number;
+  counselor_id: number;
+}
+
+export interface GroupInfoResponse {
+  group_session: GroupSession;
+  host: { id: number; name: string; username: string } | null;
+  guest: { id: number; name: string; username: string } | null;
+  counselor: { id: number; name: string } | null;
+}
+
+export interface ActiveGroupResponse extends GroupInfoResponse {
+  is_host: boolean;
+}
+
+export interface GroupInviteInfo {
+  group_session_id: number;
+  host: { name: string } | null;
+  counselor: { name: string } | null;
+}
+
+export interface WebSocketMessageIn {
+  type: 'connected' | 'user_joined' | 'user_left' | 'new_message' | 
+        'typing' | 'card_played' | 'card_removed' | 'table_cleared' | 
+        'ai_response' | 'error' | 'auth_required';
+  connected_users?: number[];
+  user_id?: number;
+  user_name?: string;
+  is_typing?: boolean;
+  content?: string;
+  id?: number;
+  sender_id?: number;
+  sender_name?: string;
+  role?: string;
+  created_at?: string;
+  slot?: string;
+  card_type?: string;
+  card_id?: number;
+  played_by?: number;
+  played_by_name?: string;
+  removed_by?: number;
+  cleared_by?: number;
+  error?: string;
+}
+
+export interface WebSocketMessageOut {
+  type: 'auth' | 'chat_message' | 'typing' | 'play_card' | 'remove_card' | 'clear_table';
+  token?: string;
+  content?: string;
+  is_typing?: boolean;
+  slot?: string;
+  card_type?: string;
+  card_id?: number;
+}
+
+export type WebSocketMessage = WebSocketMessageIn;

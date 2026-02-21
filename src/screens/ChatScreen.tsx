@@ -6,12 +6,14 @@ import { HealthStatusIcon } from '../components/shared/HealthStatusIcon';
 import { HealthStatusModal } from '../components/shared/HealthStatusModal';
 import { GameTable } from '../components/table/GameTable';
 import { CardHand } from '../components/cards/CardHand';
+import { GroupParticipants } from '../components/groups';
 import { VoiceInputButton } from '../components/chat/VoiceInputButton';
 import { VoiceTranscript } from '../components/chat/VoiceTranscript';
 import { SpeakButton } from '../components/chat/SpeakButton';
 import { HoldToTalkButton } from '../components/chat/HoldToTalkButton';
 import type { VoiceButtonState } from '../components/chat/HoldToTalkButton';
 import { useWhisperInput } from '../hooks/useWhisperInput';
+import { useGroupWebSocket } from '../hooks/useGroupWebSocket';
 import { useSpeechSynthesisContext } from '../contexts/SpeechSynthesisContext';
 import { useHaptics } from '../hooks/useHaptics';
 import { TableProvider, useTable } from '../contexts/TableContext';
@@ -30,7 +32,7 @@ export function ChatScreen() {
 }
 
 function ChatScreenContent() {
-  const { counselor, setCounselor, clientLoading, sessionId, sessionMessageCount, incrementSessionMessageCount, resetSessionMessageCount, showToast, startHealthChecks, stopHealthChecks, setShowHealthModal, loadSessions } = useApp();
+  const { counselor, setCounselor, clientLoading, sessionId, sessionMessageCount, incrementSessionMessageCount, resetSessionMessageCount, showToast, startHealthChecks, stopHealthChecks, setShowHealthModal, loadSessions, groupSessionState, leaveGroupSession, clearGroupSession, clientId } = useApp();
   const {
     slots,
     hand,
@@ -57,8 +59,72 @@ function ChatScreenContent() {
   const [talkMode, setTalkMode] = useState(false);
   const [voiceButtonState, setVoiceButtonState] = useState<VoiceButtonState>('idle');
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const [typingUserId, setTypingUserId] = useState<number | null>(null);
+  const [typingUserName, setTypingUserName] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  const isGroupMode = !!groupSessionState.groupSession;
+  const groupId = groupSessionState.groupSession?.id ?? null;
+  
+  const handleWebSocketMessage = (message: any) => {
+    if (message.type === 'new_message' && message.sender_id !== clientId) {
+      const newMessage: Message = {
+        id: message.id?.toString() || crypto.randomUUID(),
+        role: message.role,
+        content: message.content,
+        timestamp: message.created_at || new Date().toISOString(),
+        senderId: message.sender_id,
+        senderName: message.sender_name,
+      };
+      setMessages(prev => [...prev, newMessage]);
+    } else if (message.type === 'typing') {
+      if (message.is_typing) {
+        setTypingUserId(message.user_id);
+        setTypingUserName(message.user_name || null);
+      } else {
+        setTypingUserId(null);
+        setTypingUserName(null);
+      }
+    } else if (message.type === 'card_played' && message.played_by !== clientId) {
+      loadTableState(sessionId!);
+      const playerName = message.played_by_name || groupSessionState.guest?.name || groupSessionState.host?.name;
+      showToast({ message: `${playerName} played a card`, type: 'info' });
+    } else if (message.type === 'card_removed' && message.removed_by !== clientId) {
+      loadTableState(sessionId!);
+    } else if (message.type === 'table_cleared' && message.cleared_by !== clientId) {
+      loadTableState(sessionId!);
+    } else if (message.type === 'user_joined' && message.user_id !== clientId) {
+      showToast({ message: 'Friend joined the group!', type: 'success' });
+    } else if (message.type === 'user_left' && message.user_id !== clientId) {
+      showToast({ message: 'Friend left the group', type: 'info' });
+    } else if (message.type === 'ai_response') {
+      const aiMessage: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: message.content,
+        timestamp: new Date().toISOString(),
+      };
+      setMessages(prev => [...prev, aiMessage]);
+    }
+  };
+  
+  const {
+    isConnected: wsConnected,
+    sendTyping,
+  } = useGroupWebSocket({
+    groupId,
+    onMessage: handleWebSocketMessage,
+    onAuthRequired: () => {
+      showToast({ message: 'Session expired. Please log in again.', type: 'error' });
+    },
+    onMaxReconnectAttemptsReached: () => {
+      showToast({ 
+        message: 'Connection lost. Please refresh the page to reconnect.', 
+        type: 'error' 
+      });
+    },
+  });
   
   const { isListening, isTranscribing, hasPermission, requestPermission, transcript, startListening, stopListening, stopListeningAndGetResult, resetTranscript } = useWhisperInput();
   const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported, unlock: unlockSpeech } = useSpeechSynthesisContext();
@@ -82,21 +148,37 @@ function ChatScreenContent() {
       loadTableState(sessionId);
       loadSessionHistory(sessionId);
     }
-  }, [sessionId, loadTableState]);
+  }, [sessionId, groupId, loadTableState]);
 
   const loadSessionHistory = async (sid: number) => {
     setIsLoadingHistory(true);
     try {
-      const historyMessages = await apiService.getSessionMessages(sid, 100);
-      if (historyMessages && historyMessages.length > 0) {
-        const formattedMessages: Message[] = historyMessages.map((msg: any) => ({
-          id: msg.id?.toString() || crypto.randomUUID(),
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp,
-        }));
-        setMessages(formattedMessages);
-        resetSessionMessageCount();
+      if (isGroupMode && groupId) {
+        const response = await apiService.getGroupMessages(groupId, 100);
+        if (response.success && response.data && response.data.length > 0) {
+          const formattedMessages: Message[] = response.data.map((msg: any) => ({
+            id: msg.id?.toString() || crypto.randomUUID(),
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.created_at || new Date().toISOString(),
+            senderId: msg.sender_id,
+            senderName: msg.sender_name,
+          }));
+          setMessages(formattedMessages);
+          resetSessionMessageCount();
+        }
+      } else {
+        const historyMessages = await apiService.getSessionMessages(sid, 100);
+        if (historyMessages && historyMessages.length > 0) {
+          const formattedMessages: Message[] = historyMessages.map((msg: any) => ({
+            id: msg.id?.toString() || crypto.randomUUID(),
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.timestamp,
+          }));
+          setMessages(formattedMessages);
+          resetSessionMessageCount();
+        }
       }
     } catch (error) {
       console.error('Failed to load session history:', error);
@@ -184,6 +266,9 @@ function ChatScreenContent() {
   }, [sessionId, sessionMessageCount]);
 
   const handleBack = async () => {
+    if (isGroupMode) {
+      await leaveGroupSession();
+    }
     resetSessionMessageCount();
     setCounselor(null);
     await loadSessions();
@@ -323,6 +408,7 @@ function ChatScreenContent() {
       role: 'user',
       content: messageText,
       timestamp: new Date().toISOString(),
+      senderId: clientId ?? undefined,
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -346,13 +432,27 @@ function ChatScreenContent() {
 
     while (retries < maxRetries) {
       try {
-        const stream = apiService.sendMessageStream({
-          session_id: sessionId,
-          message_data: {
-            role: 'user',
+        let stream: AsyncGenerator<any>;
+        
+        if (isGroupMode && groupSessionState.groupSession) {
+          const senderName = groupSessionState.isHost 
+            ? (groupSessionState.host?.name || 'Host')
+            : (groupSessionState.guest?.name || 'Guest');
+          
+          stream = apiService.sendGroupChatStream({
+            group_session_id: groupSessionState.groupSession.id,
             content: userMessage.content,
-          },
-        });
+            sender_name: senderName,
+          });
+        } else {
+          stream = apiService.sendMessageStream({
+            session_id: sessionId!,
+            message_data: {
+              role: 'user',
+              content: userMessage.content,
+            },
+          });
+        }
 
         fullContent = '';
 
@@ -614,6 +714,11 @@ function ChatScreenContent() {
           >
             {activeCounselor?.name}
           </h1>
+          {groupSessionState.groupSession && (
+            <div className="mt-1 flex justify-center">
+              <GroupParticipants />
+            </div>
+          )}
         </button>
         <button
           onClick={toggleTableVisibility}
@@ -727,6 +832,16 @@ function ChatScreenContent() {
             
             return (
               <div key={message.id}>
+                {isGroupMode && message.role === 'user' && message.senderId && (
+                  <div className={`text-xs mb-1 ${message.senderId === clientId ? 'text-right' : 'text-left'} opacity-60`} style={{ color: chatTextColor }}>
+                    {message.senderId === clientId 
+                      ? 'You' 
+                      : (message.senderName || 
+                        (groupSessionState.host?.id === message.senderId 
+                          ? groupSessionState.host.name 
+                        : groupSessionState.guest?.name || 'Unknown')}
+                  </div>
+                )}
                 <div
                   className={`flex ${
                     message.role === 'user' ? 'justify-end' : 'justify-start'
@@ -777,6 +892,31 @@ function ChatScreenContent() {
               </div>
             );
           })}
+          
+          {typingUserId && isGroupMode && (
+            <div className="flex justify-start">
+              <div 
+                className="message-bubble assistant px-4 py-2 text-sm italic opacity-70"
+                style={{
+                  backgroundColor: activeVisuals?.chatBubble.backgroundColor,
+                  color: activeVisuals?.chatBubble.textColor,
+                }}
+              >
+                {typingUserName || (
+                  groupSessionState.host?.id === typingUserId 
+                    ? groupSessionState.host.name 
+                    : groupSessionState.guest?.name || 'Someone'
+                )} is typing...
+              </div>
+            </div>
+          )}
+          
+          {isGroupMode && !wsConnected && (
+            <div className="text-center text-xs opacity-50 py-2" style={{ color: chatTextColor }}>
+              Reconnecting...
+            </div>
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
       </main>
@@ -840,10 +980,21 @@ function ChatScreenContent() {
                 onChange={(e) => {
                   setInput(e.target.value);
                   adjustTextareaHeight();
+                  if (isGroupMode) {
+                    sendTyping(true);
+                  }
+                }}
+                onBlur={() => {
+                  if (isGroupMode) {
+                    sendTyping(false);
+                  }
                 }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
+                    if (isGroupMode) {
+                      sendTyping(false);
+                    }
                     handleSend();
                     if (textareaRef.current) {
                       textareaRef.current.style.height = 'auto';
