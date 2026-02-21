@@ -129,7 +129,7 @@ export function useGroupWebSocket({
       }
     };
 
-    ws.onclose = (event) => {
+    ws.onclose = () => {
       setIsConnected(false);
       setIsAuthenticating(false);
       wsRef.current = null;
@@ -192,10 +192,6 @@ export function useGroupWebSocket({
     send({ type: 'clear_table' });
   }, [send]);
 
-  const broadcastAiResponse = useCallback((content: string) => {
-    send({ type: 'ai_response', content });
-  }, [send]);
-
   useEffect(() => {
     if (groupId) {
       connect();
@@ -215,7 +211,6 @@ export function useGroupWebSocket({
     sendPlayCard,
     sendRemoveCard,
     sendClearTable,
-    broadcastAiResponse,
     connect,
     disconnect,
   };

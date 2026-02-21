@@ -32,7 +32,7 @@ export function ChatScreen() {
 }
 
 function ChatScreenContent() {
-  const { counselor, setCounselor, clientLoading, sessionId, sessionMessageCount, incrementSessionMessageCount, resetSessionMessageCount, showToast, startHealthChecks, stopHealthChecks, setShowHealthModal, loadSessions, groupSessionState, leaveGroupSession, clearGroupSession, clientId } = useApp();
+  const { counselor, setCounselor, clientLoading, sessionId, sessionMessageCount, incrementSessionMessageCount, resetSessionMessageCount, showToast, startHealthChecks, stopHealthChecks, setShowHealthModal, loadSessions, groupSessionState, leaveGroupSession, clientId } = useApp();
   const {
     slots,
     hand,
