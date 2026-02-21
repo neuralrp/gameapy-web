@@ -328,7 +328,6 @@ function ChatScreenContent() {
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setVoiceTranscript('');
-    setVoiceInterim('');
     resetTranscript();
     setIsLoading(true);
 
@@ -499,14 +498,12 @@ function ChatScreenContent() {
 
   const handleVoiceTranscriptReady = (text: string) => {
     setVoiceTranscript('');
-    setVoiceInterim('');
     unlockSpeech();
     handleSend(text, true);
   };
 
   const handleVoiceCancel = () => {
     setVoiceTranscript('');
-    setVoiceInterim('');
     setInput('');
     resetTranscript();
   };
@@ -515,7 +512,6 @@ function ChatScreenContent() {
     haptics.medium();
     unlockSpeech();
     setVoiceTranscript('');
-    setVoiceInterim('');
     setInput('');
     resetTranscript();
     await startListening();
