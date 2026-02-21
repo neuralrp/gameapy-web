@@ -12,7 +12,7 @@ import { SpeakButton } from '../components/chat/SpeakButton';
 import { HoldToTalkButton } from '../components/chat/HoldToTalkButton';
 import type { VoiceButtonState } from '../components/chat/HoldToTalkButton';
 import { useVoiceInput } from '../hooks/useVoiceInput';
-import { useSpeechSynthesis } from '../hooks/useSpeechSynthesis';
+import { useSpeechSynthesisContext } from '../contexts/SpeechSynthesisContext';
 import { useHaptics } from '../hooks/useHaptics';
 import { TableProvider, useTable } from '../contexts/TableContext';
 import { useApp } from '../contexts/AppContext';
@@ -61,8 +61,8 @@ function ChatScreenContent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  const { isListening, hasPermission, requestPermission, transcript, interimTranscript, startListening, stopListeningAndGetResult, resetTranscript } = useVoiceInput();
-  const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported } = useSpeechSynthesis();
+  const { isListening, hasPermission, requestPermission, transcript, interimTranscript, startListening, stopListening, stopListeningAndGetResult, resetTranscript } = useVoiceInput();
+  const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported, unlock: unlockSpeech } = useSpeechSynthesisContext();
   const haptics = useHaptics();
 
   const talkModeRef = useRef(talkMode);
@@ -127,8 +127,9 @@ function ChatScreenContent() {
   useEffect(() => {
     if (!isSpeaking && voiceButtonState === 'speaking') {
       setVoiceButtonState('idle');
+      haptics.light();
     }
-  }, [isSpeaking, voiceButtonState]);
+  }, [isSpeaking, voiceButtonState, haptics]);
 
   useEffect(() => {
     if (!talkMode) {
@@ -426,7 +427,8 @@ function ChatScreenContent() {
     
     if (autoSpeak && fullContent && ttsSupportedRef.current) {
       setVoiceButtonState('speaking');
-      setTimeout(() => speak(fullContent), 50);
+      haptics.light();
+      speak(fullContent);
     } else {
       setVoiceButtonState('idle');
     }
@@ -494,7 +496,8 @@ function ChatScreenContent() {
   const handleVoiceTranscriptReady = (text: string) => {
     setVoiceTranscript('');
     setVoiceInterim('');
-    handleSend(text);
+    unlockSpeech();
+    handleSend(text, true);
   };
 
   const handleVoiceCancel = () => {
@@ -506,6 +509,7 @@ function ChatScreenContent() {
 
   const handleHoldStart = async () => {
     haptics.medium();
+    unlockSpeech();
     setVoiceTranscript('');
     setVoiceInterim('');
     setInput('');
@@ -817,7 +821,15 @@ function ChatScreenContent() {
             )}
             <div className="flex gap-3 items-end">
               <VoiceInputButton
+                isListening={isListening}
+                isSupported={typeof window !== 'undefined' && (typeof (window as any).SpeechRecognition !== 'undefined' || typeof (window as any).webkitSpeechRecognition !== 'undefined')}
+                transcript={transcript}
+                error={null}
+                onStartListening={startListening}
+                onStopListening={stopListening}
                 onTranscriptReady={handleVoiceTranscriptReady}
+                onResetTranscript={resetTranscript}
+                onUnlockSpeech={unlockSpeech}
                 accentColor={activeVisuals?.borderColor || '#5C6B4A'}
                 disabled={isLoading || !sessionId}
               />

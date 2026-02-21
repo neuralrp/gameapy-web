@@ -1,50 +1,47 @@
 import { Mic, MicOff, Square } from 'lucide-react';
-import { useVoiceInput } from '../../hooks/useVoiceInput';
 
 interface VoiceInputButtonProps {
+  isListening: boolean;
+  isSupported: boolean;
+  transcript: string;
+  error: string | null;
+  onStartListening: () => void;
+  onStopListening: () => void;
   onTranscriptReady: (transcript: string) => void;
-  onTranscriptChange?: (transcript: string) => void;
+  onResetTranscript: () => void;
+  onUnlockSpeech?: () => void;
   disabled?: boolean;
   accentColor?: string;
 }
 
 export function VoiceInputButton({ 
-  onTranscriptReady, 
-  onTranscriptChange,
+  isListening,
+  isSupported,
+  transcript,
+  error,
+  onStartListening,
+  onStopListening,
+  onTranscriptReady,
+  onResetTranscript,
+  onUnlockSpeech,
   disabled = false,
   accentColor = '#5C6B4A'
 }: VoiceInputButtonProps) {
-  const {
-    isListening,
-    isSupported,
-    transcript,
-    interimTranscript,
-    error,
-    startListening,
-    stopListening,
-    resetTranscript,
-  } = useVoiceInput();
-
-  const fullTranscript = transcript + interimTranscript;
-
   const handleClick = async () => {
     if (disabled) return;
 
     if (isListening) {
-      stopListening();
+      onStopListening();
       if (transcript.trim()) {
         onTranscriptReady(transcript.trim());
-        resetTranscript();
+        onResetTranscript();
       }
     } else {
-      resetTranscript();
-      await startListening();
+      onResetTranscript();
+      onUnlockSpeech?.();
+      await onStartListening();
     }
   };
-
-  if (onTranscriptChange && fullTranscript !== undefined) {
-    onTranscriptChange(fullTranscript);
-  }
 
   const getIcon = () => {
     if (!isSupported) return <MicOff className="w-5 h-5" />;

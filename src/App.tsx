@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider, useApp } from './contexts/AppContext';
+import { SpeechSynthesisProvider } from './contexts/SpeechSynthesisContext';
 import { MainScreen } from './screens/MainScreen';
 import { ChatScreen } from './screens/ChatScreen';
 import { CardInventoryModal } from './screens/CardInventoryModal';
@@ -71,7 +72,9 @@ function AppContent() {
 function App() {
   return (
     <AppProvider>
-      <AppContent />
+      <SpeechSynthesisProvider>
+        <AppContent />
+      </SpeechSynthesisProvider>
     </AppProvider>
   );
 }

@@ -55,6 +55,8 @@ export function useVoiceInput(): UseVoiceInputReturn {
   const pendingResultCallbackRef = useRef<((transcript: string) => void) | null>(null);
   const transcriptRef = useRef('');
   const interimTranscriptRef = useRef('');
+  const isStartingRef = useRef(false);
+  const pendingStopRef = useRef<{ callback?: (transcript: string) => void } | null>(null);
 
   const isSupported = typeof window !== 'undefined' && 
     (typeof window.SpeechRecognition !== 'undefined' || 
@@ -104,12 +106,18 @@ export function useVoiceInput(): UseVoiceInputReturn {
       if (!granted) return;
     }
 
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
+      recognitionRef.current = null;
+    }
+
     setError(null);
     setTranscript('');
     setInterimTranscript('');
     transcriptRef.current = '';
     interimTranscriptRef.current = '';
     pendingResultCallbackRef.current = null;
+    pendingStopRef.current = null;
 
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognitionClass();
@@ -119,7 +127,17 @@ export function useVoiceInput(): UseVoiceInputReturn {
     recognition.lang = 'en-US';
 
     recognition.onstart = () => {
+      isStartingRef.current = false;
       setIsListening(true);
+      
+      if (pendingStopRef.current) {
+        const stopRequest = pendingStopRef.current;
+        pendingStopRef.current = null;
+        if (stopRequest.callback) {
+          pendingResultCallbackRef.current = stopRequest.callback;
+        }
+        recognition.stop();
+      }
     };
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
@@ -147,6 +165,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      isStartingRef.current = false;
       if (event.error === 'no-speech') {
         return;
       }
@@ -158,6 +177,7 @@ export function useVoiceInput(): UseVoiceInputReturn {
     };
 
     recognition.onend = () => {
+      isStartingRef.current = false;
       setIsListening(false);
       setInterimTranscript('');
       
@@ -170,10 +190,12 @@ export function useVoiceInput(): UseVoiceInputReturn {
     };
 
     recognitionRef.current = recognition;
+    isStartingRef.current = true;
     
     try {
       recognition.start();
     } catch (err) {
+      isStartingRef.current = false;
       if (err instanceof Error) {
         setError(`Failed to start speech recognition: ${err.message}`);
       }
@@ -192,6 +214,10 @@ export function useVoiceInput(): UseVoiceInputReturn {
   }, []);
 
   const stopListeningAndGetResult = useCallback((callback: (finalTranscript: string) => void) => {
+    if (isStartingRef.current) {
+      pendingStopRef.current = { callback };
+      return;
+    }
     pendingResultCallbackRef.current = callback;
     if (recognitionRef.current) {
       recognitionRef.current.stop();

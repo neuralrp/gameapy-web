@@ -21,10 +21,14 @@ export function HoldToTalkButton({
   const isHoldingRef = useRef(false);
   const isInteractive = state === 'idle' && !disabled;
   
+  const pointerIdRef = useRef<number | null>(null);
+
   const handlePointerDown = (e: React.PointerEvent) => {
     e.preventDefault();
     if (isInteractive) {
       isHoldingRef.current = true;
+      pointerIdRef.current = e.pointerId;
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
       onHoldStart();
     }
   };
@@ -33,20 +37,23 @@ export function HoldToTalkButton({
     e.preventDefault();
     if (isHoldingRef.current) {
       isHoldingRef.current = false;
+      if (pointerIdRef.current !== null) {
+        (e.target as HTMLElement).releasePointerCapture(pointerIdRef.current);
+        pointerIdRef.current = null;
+      }
       onHoldEnd();
     }
   };
   
-  const handlePointerLeave = () => {
+  const handlePointerCancel = (e: React.PointerEvent) => {
     if (isHoldingRef.current) {
       isHoldingRef.current = false;
-      onHoldEnd();
-    }
-  };
-  
-  const handlePointerCancel = () => {
-    if (isHoldingRef.current) {
-      isHoldingRef.current = false;
+      if (pointerIdRef.current !== null) {
+        try {
+          (e.target as HTMLElement).releasePointerCapture(pointerIdRef.current);
+        } catch {}
+        pointerIdRef.current = null;
+      }
       onHoldEnd();
     }
   };
@@ -106,7 +113,7 @@ export function HoldToTalkButton({
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full">
+    <div className="flex flex-col items-center gap-4 w-full touch-none">
       <button
         type="button"
         className={getButtonClass()}
@@ -117,7 +124,6 @@ export function HoldToTalkButton({
         }}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerLeave}
         onPointerCancel={handlePointerCancel}
         onContextMenu={(e) => e.preventDefault()}
         disabled={disabled || state === 'sending' || state === 'speaking'}

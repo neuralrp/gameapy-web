@@ -1,27 +1,51 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
 
-export interface UseSpeechSynthesisReturn {
+type SpeechRecognitionEvent = Event & {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+};
+
+type SpeechRecognitionErrorEvent = Event & {
+  error: string;
+  message: string;
+};
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  abort(): void;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  onstart: (() => void) | null;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: new () => SpeechRecognition;
+    webkitSpeechRecognition: new () => SpeechRecognition;
+  }
+}
+
+export interface SpeechSynthesisContextValue {
   speak: (text: string) => void;
   stop: () => void;
-  pause: () => void;
-  resume: () => void;
   isSpeaking: boolean;
-  isPaused: boolean;
   isSupported: boolean;
-  voices: SpeechSynthesisVoice[];
-  selectedVoice: SpeechSynthesisVoice | null;
-  setSelectedVoice: (voice: SpeechSynthesisVoice) => void;
-  rate: number;
-  setRate: (rate: number) => void;
+  speakingText: string | null;
   unlock: () => void;
 }
 
-export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
+const SpeechSynthesisContext = createContext<SpeechSynthesisContextValue | null>(null);
+
+export function SpeechSynthesisProvider({ children }: { children: ReactNode }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [speakingText, setSpeakingText] = useState<string | null>(null);
+  const [, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
-  const [rate, setRate] = useState(1);
   
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const isUnlockedRef = useRef(false);
@@ -49,10 +73,12 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
 
     loadVoices();
     
-    window.speechSynthesis.onvoiceschanged = loadVoices;
+    const handleVoicesChanged = () => loadVoices();
+    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
 
     return () => {
       window.speechSynthesis.cancel();
+      window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
     };
   }, [isSupported]);
 
@@ -67,18 +93,18 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
       utterance.voice = selectedVoice;
     }
     
-    utterance.rate = rate;
+    utterance.rate = 1;
     utterance.pitch = 1;
     utterance.volume = 1;
 
     utterance.onstart = () => {
       setIsSpeaking(true);
-      setIsPaused(false);
+      setSpeakingText(text);
     };
 
     utterance.onend = () => {
       setIsSpeaking(false);
-      setIsPaused(false);
+      setSpeakingText(null);
     };
 
     utterance.onerror = (event) => {
@@ -86,38 +112,18 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
         console.error('Speech synthesis error:', event.error);
       }
       setIsSpeaking(false);
-      setIsPaused(false);
-    };
-
-    utterance.onpause = () => {
-      setIsPaused(true);
-    };
-
-    utterance.onresume = () => {
-      setIsPaused(false);
+      setSpeakingText(null);
     };
 
     utteranceRef.current = utterance;
     window.speechSynthesis.speak(utterance);
-  }, [isSupported, selectedVoice, rate]);
+  }, [isSupported, selectedVoice]);
 
   const stop = useCallback(() => {
     if (!isSupported) return;
     window.speechSynthesis.cancel();
     setIsSpeaking(false);
-    setIsPaused(false);
-  }, [isSupported]);
-
-  const pause = useCallback(() => {
-    if (!isSupported) return;
-    window.speechSynthesis.pause();
-    setIsPaused(true);
-  }, [isSupported]);
-
-  const resume = useCallback(() => {
-    if (!isSupported) return;
-    window.speechSynthesis.resume();
-    setIsPaused(false);
+    setSpeakingText(null);
   }, [isSupported]);
 
   const unlock = useCallback(() => {
@@ -133,20 +139,25 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
     };
     window.speechSynthesis.speak(utterance);
   }, [isSupported]);
+  
+  return (
+    <SpeechSynthesisContext.Provider value={{
+      speak,
+      stop,
+      isSpeaking,
+      isSupported,
+      speakingText,
+      unlock,
+    }}>
+      {children}
+    </SpeechSynthesisContext.Provider>
+  );
+}
 
-  return {
-    speak,
-    stop,
-    pause,
-    resume,
-    isSpeaking,
-    isPaused,
-    isSupported,
-    voices,
-    selectedVoice,
-    setSelectedVoice,
-    rate,
-    setRate,
-    unlock,
-  };
+export function useSpeechSynthesisContext(): SpeechSynthesisContextValue {
+  const context = useContext(SpeechSynthesisContext);
+  if (!context) {
+    throw new Error('useSpeechSynthesisContext must be used within SpeechSynthesisProvider');
+  }
+  return context;
 }

@@ -1,5 +1,5 @@
 import { Volume2, Square } from 'lucide-react';
-import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
+import { useSpeechSynthesisContext } from '../../contexts/SpeechSynthesisContext';
 
 interface SpeakButtonProps {
   text: string;
@@ -12,12 +12,14 @@ export function SpeakButton({
   disabled = false,
   accentColor = '#5C6B4A'
 }: SpeakButtonProps) {
-  const { speak, stop, isSpeaking, isSupported } = useSpeechSynthesis();
+  const { speak, stop, isSpeaking, isSupported, speakingText } = useSpeechSynthesisContext();
+  
+  const isThisSpeaking = isSpeaking && speakingText === text;
 
   const handleClick = () => {
     if (disabled || !isSupported || !text) return;
     
-    if (isSpeaking) {
+    if (isThisSpeaking) {
       stop();
     } else {
       speak(text);
@@ -31,10 +33,10 @@ export function SpeakButton({
       onClick={handleClick}
       disabled={disabled || !text}
       className="p-1.5 rounded-full hover:bg-black/10 transition-colors opacity-60 hover:opacity-100 disabled:opacity-30"
-      title={isSpeaking ? 'Stop speaking' : 'Read aloud'}
-      aria-label={isSpeaking ? 'Stop speaking' : 'Read message aloud'}
+      title={isThisSpeaking ? 'Stop speaking' : 'Read aloud'}
+      aria-label={isThisSpeaking ? 'Stop speaking' : 'Read message aloud'}
     >
-      {isSpeaking ? (
+      {isThisSpeaking ? (
         <Square className="w-4 h-4" style={{ color: accentColor }} />
       ) : (
         <Volume2 className="w-4 h-4" style={{ color: accentColor }} />
