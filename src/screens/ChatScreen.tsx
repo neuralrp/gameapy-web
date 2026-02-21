@@ -839,7 +839,7 @@ function ChatScreenContent() {
                       : (message.senderName || 
                         (groupSessionState.host?.id === message.senderId 
                           ? groupSessionState.host.name 
-                        : groupSessionState.guest?.name || 'Unknown')}
+                        : groupSessionState.guest?.name || 'Unknown'))}
                   </div>
                 )}
                 <div
