@@ -1,6 +1,6 @@
 # Gameapy - Agent Quick Reference
 
-**Version**: 3.9.0 | **Last Updated**: 2026-02-15 (Garden feature temporarily disabled)
+**Version**: 6.0.0 | **Last Updated**: 2026-02-21 (Group Sessions + Auth)
 
 ---
 
@@ -50,76 +50,42 @@ gameapy-web/              # Web frontend repo
 
 ## Current Status
 
-**Completed Backend**: Phases 1-7 (All backend features + complete test infrastructure)
+**Completed Backend**: Phases 1-6 (Personalities, Table, Cards, Wildcards, Trading, Images)
 **Completed Frontend**: Phases 0-6 (Web MVP complete + deployed to Vercel)
-**Latest Update**: Garden Minigame (Phase 9) - Farm UI with crop grid, planting, harvesting, and growth visualization. Farm API integration, FarmTab component, and FarmContext state management. **NOTE: Garden feature temporarily disabled - "Your Garden" button removed from main page (2026-02-15).**
+**Latest Update**: Group Sessions + Auth (2026-02-21) - Multi-user chat with friends, invite codes, WebSocket support, and JWT authentication
 **Production Deploy**: Backend on Railway, Frontend on Vercel
 **Status**: Live at https://gameapy-web.vercel.app
 
 ### What's Working (Backend)
-- Database: self_cards, character_cards, world_events, entity_mentions tables (with is_pinned columns)
-- Card Generator: Plain text → structured JSON (with fallback)
-- Organic Guide System: Conversational onboarding with card creation on-demand
-- Pin System: "Keep this in mind" cards always load in context
-- Keyword-Only Entity Detection: Fast, simple matching (no vector embeddings)
-- Auto-Update System: Invisible updates with per-card toggles
-- Context Assembly: Self + pinned + current + recent cards
-- Pytest Testing Infrastructure: PostgreSQL test database, LLM mocking, test isolation
-- **All 99 tests passing** (100% pass rate, 68% code coverage)
-- Deterministic test execution (no state pollution, per-request LLM clients)
-- **Human-Readable Context**: JSON cards converted to prose for better LLM comprehension
-- **Prompt Optimization**: Persona-first ordering, trimmed examples, compressed crisis protocol
-- **Easter Egg Feature**: "Summon Deirdre" in Marina chat switches to hidden counselor Deirdre
-- **Hidden Counselor Flag**: is_hidden column marks Easter egg counselors (not shown in selection screen)
-- **Schema Migrations**: Auto-apply migrations 004-006 on startup
-- **Auto-Seed Personas**: Persona JSON → DB sync script with is_hidden support
-- **Streaming Chat**: SSE (Server-Sent Events) for real-time chat responses with metadata
+- **Card System**: self_cards, character_cards, world_events with pin/auto-update toggles
+- **Card Generator**: Plain text → structured JSON (with fallback)
+- **Pin System**: "Keep this in mind" cards always load in context
+- **Auto-Update System**: Invisible updates with per-card toggles
+- **Context Assembly**: Self + pinned + current + recent cards → prose for LLM
+- **Streaming Chat**: SSE real-time responses with metadata
+- **Evolution Features**: Personalities, Table, Universal Cards, Wildcards, Friends, Trading, Notifications, Images
+- **Group Sessions**: Multi-user chat with friends, invite codes, WebSocket support
+- **Auth System**: Login/register with JWT tokens
+- **Schema Migrations**: Auto-apply on startup (001-026)
 
 ### What's Working (Frontend - Web MVP)
 - **Phase 0 Complete**: React + Vite + TypeScript project initialized
-- **Phase 1 Complete**: Counselor selection screen with 4 colored placeholder cards
+- **Phase 1 Complete**: Personality selection screen
 - **Phase 2 Complete**: Chat interface with real backend integration
 - **Phase 3 Complete**: Card inventory modal with tabs, search, pin/auto-update
 - **Phase 4 Complete**: Card detail view and inline editing with validation
 - **Phase 5 Complete**: Polish & mobile optimization with animations and touch targets
 - **Phase 6 Complete**: Testing, bug fixes, and Vercel deployment
 - **Production Deploy**: https://gameapy-web.vercel.app
-- **GuideScreen**: Organic card creation flow with conversational onboarding
-- **CounselorInfoModal**: View counselor details from chat screen with counselor-specific colors
-- **Toast Component**: User notifications (success/error/info)
-- **Redesign**: CounselorSelection as 2x2 color block grid
-- **Redesign**: ChatScreen with iMessage-style bubbles, counselor info link
-- **Redesign**: CardInventoryModal with modern iOS-style UI
-- **Auto-Session Analysis**: Every 5 messages, trigger card updates with toast notification
-- **Session Message Counting**: Track messages per session for analysis triggers
-- **Global State**: Guide flow state (showGuide, guideSessionId) in AppContext
-- **Easter Egg Feature**: "Summon Deirdre" in Marina chat switches to hidden counselor Deirdre
-- **Counselor Switching**: Frontend handles counselor_switched flag, updates state, shows toast
-- **Counselor-Specific Theming**: Colors automatically update based on counselor's visual settings
-- **Quick AI Card Creation**: Button in CardInventoryModal for instant card generation
-- **Full-Screen Inventory Mode**: Immersive card browsing experience
-- **Streaming Chat**: SSE-based real-time chat with smooth text rendering and metadata
-- GBA color palette configured in Tailwind CSS v4
-- VT323 retro font loaded from Google Fonts
-- Client ID auto-generation with localStorage persistence
-- Global state management (counselor, inventory modal) via React Context
-- Card editing: view details, edit core fields, save changes, validation, unsaved changes confirmation
-- Smooth fade-in animations (0.3s) for all screens
-- Button hover/active animations with visual feedback
-- All touch targets meet WCAG AA (44x44px minimum)
-- Responsive layouts for mobile/tablet/desktop
-- Retry buttons for all failed API requests
-- Mobile keyboard overlap prevention (flex-shrink-0 on headers/footers)
-- Vercel configuration with Railway backend integration
-- **Garden Minigame UI** (Temporarily Disabled - 2026-02-15):
-  - FarmTab component with 4x4 crop grid
-  - Plant crops: potato, tomato, corn, cauliflower, parsnip
-  - Visual growth stages (0-5) with crop sprites
-  - Harvest ready indicator for mature crops
-  - FarmContext for state management
-  - Crop/seed image assets (public/farm-assets/)
-  - Advisor tab in CardInventoryModal
-  - **Note**: "Your Garden" button removed from CounselorSelection screen. Farm route and components retained for potential future re-enablement.
+- **Game Table**: 3-slot table UI (center, far_left, far_right)
+- **Card Hand**: Draggable cards at bottom of screen
+- **Wildcard Button**: Draw random conversation prompts
+- **Friends Screen**: Add/accept/decline friends
+- **Notification Badge**: Unread count indicator
+- **Login/Register Screens**: Auth with JWT tokens
+- **Group Join Modal**: Join group sessions via invite code
+- **Streaming Chat**: SSE-based real-time chat with smooth text rendering
+- **Mobile Optimized**: WCAG-compliant touch targets, responsive layouts
 
 ---
 
@@ -213,15 +179,28 @@ React Web App (Vite, Mobile-Optimized)
     ↓
 FastAPI Backend
     ├─ Cards API (/api/v1/cards/*)
-    ├─ Guide API (/api/v1/guide/*)
     ├─ Chat API (/api/v1/chat/*)
+    ├─ Personalities API (/api/v1/personalities/*)
+    ├─ Table API (/api/v1/table/*)
+    ├─ Universal Cards API (/api/v1/universal-cards/*)
+    ├─ Wildcards API (/api/v1/wildcards/*)
+    ├─ Friends API (/api/v1/friends/*)
+    ├─ Trading API (/api/v1/trading/*)
+    ├─ Notifications API (/api/v1/notifications/*)
+    ├─ Images API (/api/v1/images/*)
+    ├─ Groups API (/api/v1/groups/*)
+    ├─ Auth API (/auth/*)
     └─ Session Analyzer (/api/v1/sessions/{id}/analyze)
     ↓
 PostgreSQL Database
-    ├─ self_cards (one per client)
-    ├─ character_cards (people in user's life)
-    ├─ world_events (life milestones, NeuralRP-style)
-    └─ entity_mentions (tracking)
+    ├─ self_cards, character_cards, world_events
+    ├─ counselor_profiles (includes is_default, is_custom)
+    ├─ universal_cards, card_hands, table_states
+    ├─ wildcard_topics
+    ├─ friendships, card_trades, traded_cards
+    ├─ notifications
+    ├─ group_sessions, group_messages
+    └─ entity_mentions, sessions, messages
 ```
 
 ### Navigation Flow
@@ -272,22 +251,19 @@ response = await simple_llm_client.chat_completion(
 
 | Phase | Status | Key Deliverables |
 |-------|--------|------------------|
-| 1 | ✅ | Database schema, unified card methods |
-| 2 | ✅ | Card Generator, Guide System |
-| 3 | ✅ | Unified Card API (CRUD, search, toggle) |
-| 4 | ✅ | Auto-updater, Canon Refactor (removed in pivot) |
-| 5 | ✅ | Entity Detection, Context Assembly, Guide System |
-| 6 | ✅ | Pytest Infrastructure (test isolation, LLM mocking, fixtures) |
-| 7 | ✅ | New Test Coverage (DB, API, E2E) - 89/89 tests passing (100%), 68% coverage |
-| 8 | ❌ | Flutter UI Development (ARCHIVED - replaced by web MVP) |
-| 9 | ✅ | Garden Minigame - Farm UI with crop grid, planting/harvesting, growth stages, FarmTab component, FarmContext **(Temporarily disabled - button removed 2026-02-15)** |
+| 1 | ✅ | Personalities (renamed), Snow default, is_default flag |
+| 2 | ✅ | Card Hand, Table UI, Universal Cards |
+| 3 | ✅ | Roleplay Mode, Card Playing Mechanics |
+| 4 | ✅ | Wildcards (30 prompts in 4 categories) |
+| 5 | ✅ | Friends System, Card Trading, Notifications |
+| 6 | ✅ | Image Generation (avatars, card visuals) |
 
 ### Frontend Phases (Web MVP)
 
 | Phase | Status | Key Deliverables |
 |-------|--------|------------------|
 | | 0 | ✅ | Project Setup (React + Vite + Tailwind, GBA colors, VT323 font) |
-| | 1 | ✅ | Counselor Selection Screen (4 cards, Settings button, navigation) |
+| | 1 | ✅ | Personality Selection Screen |
 | | 2 | ✅ | Chat Interface (UI complete, backend integration complete) |
 | | 3 | ✅ | Card Inventory Modal (tabs, search, card list, pin/auto-update) |
 | | 4 | ✅ | Card Editing (detail view, inline editing, validation) |
@@ -298,80 +274,23 @@ response = await simple_llm_client.chat_completion(
 
 ## Critical Files
 
-### Documentation
-
-| File | Purpose |
-|------|---------|
-| `AGENTS.md` | LLM-optimized project documentation (this file) |
-| `TECHNICAL.md` | Detailed technical breakdown |
-| `CHANGELOG.md` | Project changelog with version history |
-| `README.md` | Project overview for GitHub |
-
-### Backend Core
-
-| File | Purpose |
-|------|---------|
-| `backend/main.py` | FastAPI app, route registration |
-| `backend/app/db/database.py` | All DB operations (650+ lines) |
-| `backend/app/api/cards.py` | Card management endpoints |
-| `backend/app/api/guide.py` | Guide onboarding endpoints |
-| `backend/app/api/session_analyzer.py` | Session analysis endpoint |
-| `backend/app/services/card_generator.py` | LLM card generation (max_tokens=4000) |
-| `backend/app/services/guide_system.py` | Organic guide conversation system |
-| `backend/app/services/card_updater.py` | Auto-update service |
-| `backend/app/services/simple_llm_fixed.py` | HTTP client for OpenRouter API |
- | `backend/app/models/schemas.py` | Pydantic models |
- | `backend/app/config/core_truths.py` | Universal principles for all personas (non-clinical AI companion) |
- | `backend/data/personas/*.json` | Persona definitions (who_you_are, your_vibe, your_worldview) |
- | `backend/scripts/seed_personas.py` | Persona JSON → DB sync script (supports is_hidden) |
- | `backend/migrations/005_add_hidden_flag.py` | Add is_hidden column for Easter egg counselors |
- | `backend/schema.sql` | Database schema |
- | `backend/pytest.ini` | Pytest configuration (asyncio, markers, test discovery, coverage) |
-
 ### Frontend Core (Web MVP)
 
 | File | Purpose |
 |------|---------|
-| `gameapy-web/src/App.tsx` | Root component with routing |
-| `gameapy-web/src/main.tsx` | App entry point |
-| `gameapy-web/src/index.css` | Global styles + Tailwind v4 |
-| `gameapy-web/src/contexts/AppContext.tsx` | Global state (client ID, counselor, inventory) |
-| `gameapy-web/src/services/api.ts` | HTTP client for backend API |
-| `gameapy-web/src/screens/CounselorSelection.tsx` | Counselor selection screen ✅ |
-| `gameapy-web/src/screens/ChatScreen.tsx` | Chat interface (UI complete, with polish) ✅ |
-| `gameapy-web/src/screens/CardInventoryModal.tsx` | Card inventory modal (complete with edit) ✅ |
-| `gameapy-web/src/screens/GuideScreen.tsx` | Organic card creation flow ✅ |
-| `gameapy-web/src/components/farm/FarmTab.tsx` | Farm minigame UI component ✅ |
-| `gameapy-web/src/components/farm/FarmTab.css` | Farm tab styles |
-| `gameapy-web/src/contexts/FarmContext.tsx` | Farm state management ✅ |
-| `gameapy-web/src/components/farm/FarmEntryCard.tsx` | Garden entry button (removed from CounselorSelection - disabled 2026-02-15) |
-| `gameapy-web/src/screens/FarmScreen.tsx` | Farm screen component (route retained for potential re-enablement) |
-| `gameapy-web/public/farm-assets/` | Crop and seed image assets |
-| `gameapy-web/src/components/ui/button.tsx` | Button component with GBA styling |
-| `gameapy-web/src/components/counselor/CounselorCard.tsx` | Counselor card component |
- | `gameapy-web/src/components/counselor/CounselorInfoModal.tsx` | Counselor details modal with counselor-specific colors ✅ |
- | `gameapy-web/src/components/shared/Toast.tsx` | Toast notification component ✅ |
- | `backend/data/personas/Deirdre.json` | Deirdre persona (hidden Easter egg counselor) |
- | `gameapy-web/package.json` | Dependencies (React 19.2.0+, Vite 7.2.4+, Tailwind 4.1.18+) |
-| `gameapy-web/vite.config.ts` | Vite build configuration |
-| `gameapy-web/vercel.json` | Vercel deployment configuration |
-| `gameapy-web/.env.production` | Production environment variables |
-
-### Test Infrastructure
-
-| File | Purpose | Tests |
-|------|---------|--------|
-| `backend/tests/conftest.py` | Test fixtures (DB isolation, LLM mocking, sample data) | - |
-| `backend/tests/test_entity_detector.py` | Entity detection tests | 8 tests ✅ |
-| `backend/tests/test_context_assembler.py` | Context assembly tests | 6 tests ✅ |
-| `backend/tests/test_guide_system.py` | Guide system tests | 6 tests ✅ |
-| `backend/tests/test_database.py` | Database CRUD tests | 20 tests ✅ |
-| `backend/tests/test_api_cards.py` | Cards API tests | 17 tests ✅ |
-| `backend/tests/test_api_chat.py` | Chat API tests | 11 tests ✅ |
-| `backend/tests/test_api_guide.py` | Guide API tests | 8 tests ✅ |
-| `backend/tests/test_api_session_analyzer.py` | Session analyzer tests | 5 tests ✅ |
-| `backend/tests/test_e2e_flows.py` | E2E flow tests | 6 tests ✅ |
-| `backend/tests/test_llm.py` | Real LLM integration tests | 3 tests ✅ |
+| `src/App.tsx` | Root component with routing |
+| `src/contexts/AppContext.tsx` | Global state |
+| `src/contexts/TableContext.tsx` | Table state management |
+| `src/services/api.ts` | HTTP client |
+| `src/screens/MainScreen.tsx` | Main personality selection |
+| `src/screens/ChatScreen.tsx` | Chat with table integration |
+| `src/screens/FriendsScreen.tsx` | Friends management |
+| `src/screens/LoginScreen.tsx` | Login/register UI |
+| `src/components/table/GameTable.tsx` | 3-slot table UI |
+| `src/components/table/TableSlot.tsx` | Individual slot |
+| `src/components/cards/CardHand.tsx` | Draggable card hand |
+| `src/components/cards/WildcardButton.tsx` | Draw wildcard |
+| `src/components/groups/GroupJoinModal.tsx` | Join group via invite code |
 
 ---
 
@@ -391,36 +310,53 @@ response = await simple_llm_client.chat_completion(
 
 ## API Endpoints Reference
 
+**Personalities** (`/api/v1/personalities`):
+- `GET /` - List all personalities
+- `GET /default` - Get Snow (default personality)
+- `POST /` - Create custom personality
+- `GET /{id}` - Get personality
+- `PUT /{id}` - Update personality
+- `DELETE /{id}` - Soft delete
+
 **Cards** (`/api/v1/cards`):
 - `POST /generate-from-text` - Generate from plain text
 - `POST /save` - Save to database
 - `PUT /{card_type}/{id}` - Partial update
-- `PUT /{card_type}/{id}/pin` - Pin card (always load)
+- `PUT /{card_type}/{id}/pin` - Pin card
 - `PUT /{card_type}/{id}/unpin` - Unpin card
 - `PUT /{card_type}/{id}/toggle-auto-update` - Toggle auto-update
 - `GET /search` - Search across types
 - `DELETE /{card_type}/{id}` - Delete card
 
-**Clients** (`/api/v1/clients/{id}`):
-- `GET /cards` - List all cards (paginated)
+**Table** (`/api/v1/table`):
+- `POST /play` - Play card to slot
+- `POST /remove` - Remove card from slot
+- `POST /clear` - Clear all cards
+- `GET /state/{session_id}` - Get table state
 
-**Guide** (`/api/v1/guide`):
-- `POST /conversation/start` - Start organic conversation
-- `POST /conversation/input` - Process user input (may suggest card)
-- `POST /conversation/confirm-card` - Create suggested card
-
-**Sessions** (`/api/v1/sessions/{id}`):
-- `POST /analyze` - Analyze session and auto-update cards
+**Friends** (`/api/v1/friends`):
+- `POST /request/{username}` - Send friend request
+- `POST /accept/{requester_id}` - Accept request
+- `POST /decline/{requester_id}` - Decline request
+- `GET /` - List friends
+- `GET /pending` - Pending requests
 
 **Chat** (`/api/v1/chat`):
-- `POST /chat` - Send message with streaming SSE response (auto-loads context)
-- Returns SSE stream with chunks:
-  - Content: `{"type": "content", "content": "..."}`
-  - Done: `{"type": "done", "data": {"cards_loaded": N, "counselor_switched": bool, "new_counselor": {...}}}`
-  - Error: `{"type": "error", "error": "..."}`
+- `POST /chat` - SSE streaming response with table context
 
-**Farm** (`/api/v1/farm/*`):
-- All endpoints available but hidden from main UI flow (temporarily disabled - 2026-02-15)
+**Groups** (`/api/v1/groups`):
+- `POST /create` - Create group session with friend
+- `POST /join/{invite_code}` - Join via invite code
+- `GET /active` - Get user's active group session
+- `GET /{group_id}` - Get group session details
+- `POST /{group_id}/leave` - Leave group session
+- `GET /{group_id}/messages` - Get group messages
+- `POST /chat` - Group chat with SSE streaming
+
+**Auth** (`/auth`):
+- `POST /login` - Login with username/password
+- `POST /register` - Register new user
+- `GET /me` - Get current user info
 
 ---
 
@@ -440,53 +376,9 @@ Text: #483018 (dark brown)
 ## Quick Start
 
 ```bash
-cd backend
-pip install -r requirements.txt
-python main.py
-# Server at http://localhost:8000
-# API docs at http://localhost:8000/docs
+npm install
+npm run dev
 ```
-
-## Testing
-
-```bash
-cd backend
-# Run all tests
-pytest tests/ -v
-
-# Run by category
-pytest tests/ -m unit -v          # Unit tests only
-pytest tests/ -m integration -v   # Integration tests only
-pytest tests/ -m e2e -v           # E2E tests
-
-# Run with coverage
-pytest tests/ --cov=app --cov-report=html
-```
-
-### Test Infrastructure
-
-- **Database Isolation**: PostgreSQL test database with per-test truncation
-- **LLM Mocking**: Deterministic mocks for success/fallback/error/no-card scenarios
-- **Per-Request Clients**: No global httpx.AsyncClient caching (prevents event loop issues)
-- **Test Categories**: `@pytest.mark.unit/integration/e2e/slow/llm`
-- **Fixtures**: Sample data (client, counselor, cards, sessions) and API test client
-- **Coverage**: pytest-cov for code coverage reporting (current: 68%)
-
-### Test Results
-
-**All 89 tests passing** (100% pass rate):
-- Database tests: 20 tests ✅
-- Entity detector tests: 8 tests ✅
-- Context assembler tests: 6 tests ✅
-- Guide system tests: 6 tests ✅
-- Cards API tests: 17 tests ✅
-- Chat API tests: 11 tests ✅
-- Guide API tests: 8 tests ✅
-- Session analyzer tests: 5 tests ✅
-- E2E flow tests: 6 tests ✅
-- LLM integration tests: 3 tests ✅
-
-See `PHASE7_TEST_FIXES_SUMMARY.md` for full details on test infrastructure.
 
 ---
 
@@ -496,26 +388,14 @@ See `PHASE7_TEST_FIXES_SUMMARY.md` for full details on test infrastructure.
 - **Frontend**: https://gameapy-web.vercel.app
 - **Backend**: https://gameapy-backend-production.up.railway.app
 
-### Deployment Architecture
-```
-User Browser
-    ↓
-gameapy-web.vercel.app (Vercel - React Frontend)
-    ↓
-HTTPS API calls
-    ↓
-gameapy-backend-production.up.railway.app (Railway - FastAPI Backend)
-    ↓
-PostgreSQL Database
-```
-
 ### Vercel Configuration
 - Build: `npm run build`
 - Output: `dist/`
 - Framework: Vite
 - Environment Variable: `VITE_API_BASE_URL=https://gameapy-backend-production.up.railway.app`
+- SPA Rewrites: All routes redirect to `index.html` for client-side routing
 - Auto-deploy on push to `main` branch
 
 ---
 
-**Questions?** Check `TECHNICAL.md` or `WEB_MVP_DEVELOPMENT_PLAN.md` for comprehensive documentation.
+**Questions?** Check root `AGENTS.md` for comprehensive documentation.
