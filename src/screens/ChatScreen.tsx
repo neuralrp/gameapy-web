@@ -11,7 +11,7 @@ import { VoiceTranscript } from '../components/chat/VoiceTranscript';
 import { SpeakButton } from '../components/chat/SpeakButton';
 import { HoldToTalkButton } from '../components/chat/HoldToTalkButton';
 import type { VoiceButtonState } from '../components/chat/HoldToTalkButton';
-import { useVoiceInput } from '../hooks/useVoiceInput';
+import { useWhisperInput } from '../hooks/useWhisperInput';
 import { useSpeechSynthesisContext } from '../contexts/SpeechSynthesisContext';
 import { useHaptics } from '../hooks/useHaptics';
 import { TableProvider, useTable } from '../contexts/TableContext';
@@ -54,14 +54,13 @@ function ChatScreenContent() {
   const [showCounselorInfo, setShowCounselorInfo] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState('');
-  const [voiceInterim, setVoiceInterim] = useState('');
   const [talkMode, setTalkMode] = useState(false);
   const [voiceButtonState, setVoiceButtonState] = useState<VoiceButtonState>('idle');
   const [isRequestingPermission, setIsRequestingPermission] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  const { isListening, hasPermission, requestPermission, transcript, interimTranscript, startListening, stopListening, stopListeningAndGetResult, resetTranscript } = useVoiceInput();
+  const { isListening, isTranscribing, hasPermission, requestPermission, transcript, startListening, stopListening, stopListeningAndGetResult, resetTranscript } = useWhisperInput();
   const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported, unlock: unlockSpeech } = useSpeechSynthesisContext();
   const haptics = useHaptics();
 
@@ -111,12 +110,17 @@ function ChatScreenContent() {
   }, [loadAllCards]);
 
   useEffect(() => {
-    if (transcript || interimTranscript) {
+    if (transcript) {
       setVoiceTranscript(transcript);
-      setVoiceInterim(interimTranscript);
-      setInput(transcript + interimTranscript);
+      setInput(transcript);
     }
-  }, [transcript, interimTranscript]);
+  }, [transcript]);
+
+  useEffect(() => {
+    if (isTranscribing) {
+      setVoiceButtonState('sending');
+    }
+  }, [isTranscribing]);
 
   useEffect(() => {
     if (isListening) {
@@ -800,7 +804,7 @@ function ChatScreenContent() {
           <div className="flex flex-col items-center justify-center py-4">
             <HoldToTalkButton
               state={isRequestingPermission ? 'sending' : voiceButtonState}
-              transcript={voiceTranscript + voiceInterim}
+              transcript={voiceTranscript}
               onHoldStart={handleHoldStart}
               onHoldEnd={handleHoldEnd}
               disabled={!sessionId || isRequestingPermission}
@@ -811,18 +815,18 @@ function ChatScreenContent() {
           </div>
         ) : (
           <>
-            {(voiceTranscript || voiceInterim) && (
+            {voiceTranscript && (
               <VoiceTranscript
                 transcript={voiceTranscript}
-                interimTranscript={voiceInterim}
+                interimTranscript=""
                 onCancel={handleVoiceCancel}
                 textColor={chatTextColor}
               />
             )}
             <div className="flex gap-3 items-end">
               <VoiceInputButton
-                isListening={isListening}
-                isSupported={typeof window !== 'undefined' && (typeof (window as any).SpeechRecognition !== 'undefined' || typeof (window as any).webkitSpeechRecognition !== 'undefined')}
+                isListening={isListening || isTranscribing}
+                isSupported={typeof navigator !== 'undefined' && navigator.mediaDevices !== undefined}
                 transcript={transcript}
                 error={null}
                 onStartListening={startListening}
@@ -849,7 +853,7 @@ function ChatScreenContent() {
                     }
                   }
                 }}
-                placeholder={isListening ? "Listening..." : "Type your message..."}
+                placeholder={isTranscribing ? "Transcribing..." : isListening ? "Listening..." : "Type your message..."}
                 className="input-bubble flex-1 px-4 py-3 font-sans bg-white min-h-[44px] resize-none overflow-hidden"
                 style={{ color: '#000000' }}
                 disabled={isLoading || !sessionId}
