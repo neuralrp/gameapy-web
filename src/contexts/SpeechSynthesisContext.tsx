@@ -1,37 +1,8 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef, type ReactNode } from 'react';
-
-type SpeechRecognitionEvent = Event & {
-  results: SpeechRecognitionResultList;
-  resultIndex: number;
-};
-
-type SpeechRecognitionErrorEvent = Event & {
-  error: string;
-  message: string;
-};
-
-interface SpeechRecognition extends EventTarget {
-  continuous: boolean;
-  interimResults: boolean;
-  lang: string;
-  start(): void;
-  stop(): void;
-  abort(): void;
-  onresult: ((event: SpeechRecognitionEvent) => void) | null;
-  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
-  onend: (() => void) | null;
-  onstart: (() => void) | null;
-}
-
-declare global {
-  interface Window {
-    SpeechRecognition: new () => SpeechRecognition;
-    webkitSpeechRecognition: new () => SpeechRecognition;
-  }
-}
+import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
+import { TTS_SERVER_URL } from '../utils/constants';
 
 export interface SpeechSynthesisContextValue {
-  speak: (text: string) => void;
+  speak: (text: string, personality?: string) => Promise<void>;
   stop: () => void;
   isSpeaking: boolean;
   isSupported: boolean;
@@ -44,100 +15,90 @@ const SpeechSynthesisContext = createContext<SpeechSynthesisContextValue | null>
 export function SpeechSynthesisProvider({ children }: { children: ReactNode }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speakingText, setSpeakingText] = useState<string | null>(null);
-  const [, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const isUnlockedRef = useRef(false);
 
-  const isSupported = typeof window !== 'undefined' && 
-    typeof window.speechSynthesis !== 'undefined';
+  const isSupported = typeof window !== 'undefined' && typeof Audio !== 'undefined';
 
-  useEffect(() => {
-    if (!isSupported) return;
+  const speak = useCallback(async (text: string, personality?: string) => {
+    if (!text || !text.trim()) return;
 
-    const loadVoices = () => {
-      const availableVoices = window.speechSynthesis.getVoices();
-      setVoices(availableVoices);
-      
-      if (!selectedVoice && availableVoices.length > 0) {
-        const englishVoice = availableVoices.find(
-          v => v.lang.startsWith('en-') && !v.name.includes('Google')
-        ) || availableVoices.find(
-          v => v.lang.startsWith('en-')
-        ) || availableVoices[0];
-        
-        setSelectedVoice(englishVoice);
-      }
-    };
-
-    loadVoices();
-    
-    const handleVoicesChanged = () => loadVoices();
-    window.speechSynthesis.addEventListener('voiceschanged', handleVoicesChanged);
-
-    return () => {
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.removeEventListener('voiceschanged', handleVoicesChanged);
-    };
-  }, [isSupported]);
-
-  const speak = useCallback((text: string) => {
-    if (!isSupported || !text) return;
-
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
     }
-    
-    utterance.rate = 1;
-    utterance.pitch = 1;
-    utterance.volume = 1;
 
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-      setSpeakingText(text);
-    };
+    try {
+      const response = await fetch(`${TTS_SERVER_URL}/speak`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          text: text.trim(),
+          personality: personality || null,
+        }),
+      });
 
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      setSpeakingText(null);
-    };
-
-    utterance.onerror = (event) => {
-      if (event.error !== 'canceled') {
-        console.error('Speech synthesis error:', event.error);
+      if (!response.ok) {
+        throw new Error(`TTS server error: ${response.status}`);
       }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.onplay = () => {
+        setIsSpeaking(true);
+        setSpeakingText(text);
+      };
+
+      audio.onended = () => {
+        setIsSpeaking(false);
+        setSpeakingText(null);
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+      };
+
+      audio.onerror = () => {
+        setIsSpeaking(false);
+        setSpeakingText(null);
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+      };
+
+      await audio.play();
+      
+    } catch (error) {
+      console.error('TTS error:', error);
       setIsSpeaking(false);
       setSpeakingText(null);
-    };
-
-    utteranceRef.current = utterance;
-    window.speechSynthesis.speak(utterance);
-  }, [isSupported, selectedVoice]);
+    }
+  }, []);
 
   const stop = useCallback(() => {
-    if (!isSupported) return;
-    window.speechSynthesis.cancel();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
     setIsSpeaking(false);
     setSpeakingText(null);
-  }, [isSupported]);
+  }, []);
 
   const unlock = useCallback(() => {
     if (!isSupported || isUnlockedRef.current) return;
     
-    const utterance = new SpeechSynthesisUtterance('');
-    utterance.volume = 0;
-    utterance.onend = () => {
+    const audio = new Audio();
+    audio.src = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
+    audio.volume = 0;
+    audio.play().then(() => {
       isUnlockedRef.current = true;
-    };
-    utterance.onerror = () => {
-      isUnlockedRef.current = true;
-    };
-    window.speechSynthesis.speak(utterance);
+    }).catch(() => {
+      // Ignore unlock errors
+    });
   }, [isSupported]);
   
   return (

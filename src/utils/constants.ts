@@ -2,6 +2,8 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 
 export const WHISPER_SERVER_URL = import.meta.env.VITE_WHISPER_SERVER_URL || 'http://localhost:8765';
 
+export const TTS_SERVER_URL = import.meta.env.VITE_TTS_SERVER_URL || 'http://localhost:8766';
+
 export const API_ENDPOINTS = {
   personalities: '/api/v1/personalities/',
   defaultPersonality: '/api/v1/personalities/default',

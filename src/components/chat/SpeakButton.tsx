@@ -3,12 +3,14 @@ import { useSpeechSynthesisContext } from '../../contexts/SpeechSynthesisContext
 
 interface SpeakButtonProps {
   text: string;
+  personality?: string;
   disabled?: boolean;
   accentColor?: string;
 }
 
 export function SpeakButton({ 
-  text, 
+  text,
+  personality,
   disabled = false,
   accentColor = '#5C6B4A'
 }: SpeakButtonProps) {
@@ -22,7 +24,7 @@ export function SpeakButton({
     if (isThisSpeaking) {
       stop();
     } else {
-      speak(text);
+      speak(text, personality);
     }
   };
 

@@ -431,7 +431,7 @@ function ChatScreenContent() {
     if (autoSpeak && fullContent && ttsSupportedRef.current) {
       setVoiceButtonState('speaking');
       haptics.light();
-      speak(fullContent);
+      speak(fullContent, activeCounselor?.name);
     } else {
       setVoiceButtonState('idle');
     }
@@ -490,7 +490,7 @@ function ChatScreenContent() {
     
     if (talkModeRef.current && fullContent && ttsSupportedRef.current) {
       setVoiceButtonState('speaking');
-      setTimeout(() => speak(fullContent), 50);
+      setTimeout(() => speak(fullContent, activeCounselor?.name), 50);
     } else {
       setVoiceButtonState('idle');
     }
@@ -754,7 +754,8 @@ function ChatScreenContent() {
                     {message.role === 'assistant' && message.content && (
                       <div className="flex justify-end mt-1">
                         <SpeakButton 
-                          text={message.content} 
+                          text={message.content}
+                          personality={activeCounselor?.name}
                           accentColor={activeVisuals?.chatBubble.textColor || '#3D3426'}
                         />
                       </div>
