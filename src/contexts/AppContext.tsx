@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import type { Personality } from '../types/personality';
 import type { APIResponse, GroupSession, GroupParticipant } from '../types/api';
@@ -171,7 +171,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('gameapy_session_id');
   };
 
-  const loadSessions = async () => {
+  const loadSessions = useCallback(async () => {
     try {
       const response = await apiService.getAllSessions(50);
       if (response.success && 'sessions' in response) {
@@ -180,7 +180,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Failed to load sessions:', error);
     }
-  };
+  }, []);
 
   const resumeSession = async (session: SessionInfo) => {
     setIsResumingSession(true);
