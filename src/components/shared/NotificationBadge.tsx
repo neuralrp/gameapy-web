@@ -13,10 +13,9 @@ interface Notification {
 
 interface NotificationBadgeProps {
   onClick: () => void;
-  onGroupInviteAccepted?: (groupSessionId: number) => void;
 }
 
-export const NotificationBadge: React.FC<NotificationBadgeProps> = ({ onClick, onGroupInviteAccepted }) => {
+export const NotificationBadge: React.FC<NotificationBadgeProps> = ({ onClick }) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
