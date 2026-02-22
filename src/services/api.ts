@@ -248,6 +248,10 @@ export class ApiService {
     return this.request(`/api/v1/sessions/${sessionId}/end`, { method: 'POST' });
   }
 
+  async deleteSession(sessionId: number): Promise<APIResponse> {
+    return this.request(`/api/v1/sessions/${sessionId}`, { method: 'DELETE' });
+  }
+
   async sendMessage(data: ChatRequest): Promise<Response> {
     const url = `${this.baseUrl}${API_ENDPOINTS.chat}`;
     

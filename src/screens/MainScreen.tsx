@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageSquare, LogOut, Menu, X, Loader2, Plus, Users } from 'lucide-react';
+import { MessageSquare, LogOut, Menu, X, Loader2, Plus, Users, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../contexts/AppContext';
 import { apiService } from '../services/api';
@@ -166,6 +166,18 @@ export function MainScreen() {
     } catch (err) {
       console.error('Error resuming group chat:', err);
       setError(err instanceof Error ? err.message : 'Failed to resume group chat');
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Delete this chat?')) return;
+    try {
+      await apiService.deleteSession(sessionId);
+      await loadSessions();
+    } catch (err) {
+      console.error('Failed to delete session:', err);
+      setError('Failed to delete chat');
     }
   };
 
@@ -336,11 +348,10 @@ export function MainScreen() {
                     )}
                     <div className="space-y-2">
                       {sessions.map((session) => (
-                        <button
+                        <div
                           key={session.id}
                           onClick={() => handleResumeChat(session)}
-                          disabled={isResumingSession}
-                          className="w-full text-left p-3 rounded-lg border-2 border-gba-border bg-gba-ui/50 hover:bg-gba-ui/80 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                          className="w-full text-left p-3 rounded-lg border-2 border-gba-border bg-gba-ui/50 hover:bg-gba-ui/80 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
                         >
                           <div className="flex items-start gap-3">
                             <MessageSquare className="w-5 h-5 text-gba-text/60 flex-shrink-0 mt-0.5" />
@@ -358,8 +369,15 @@ export function MainScreen() {
                                 </span>
                               </div>
                             </div>
+                            <button
+                              onClick={(e) => handleDeleteSession(session.id, e)}
+                              className="p-1 hover:bg-red-500/20 rounded transition-colors flex-shrink-0"
+                              aria-label="Delete chat"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-500/60 hover:text-red-500" />
+                            </button>
                           </div>
-                        </button>
+                        </div>
                       ))}
                     </div>
                   </div>
