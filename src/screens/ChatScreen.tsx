@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, ArrowUp, LayoutGrid, Play, X, Headphones, HeadphoneOff } from 'lucide-react';
+import { ArrowLeft, ArrowUp, LayoutGrid, Play, X, Headphones, HeadphoneOff, Volume2, Square } from 'lucide-react';
 import { CounselorInfoModal } from '../components/counselor/CounselorInfoModal';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { HealthStatusIcon } from '../components/shared/HealthStatusIcon';
@@ -63,6 +63,7 @@ function ChatScreenContent() {
   const [typingUserName, setTypingUserName] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const lastAssistantMessageRef = useRef<string>('');
   
   const isGroupMode = !!groupSessionState.groupSession;
   const groupId = groupSessionState.groupSession?.id ?? null;
@@ -127,7 +128,7 @@ function ChatScreenContent() {
   });
   
   const { isListening, isTranscribing, hasPermission, requestPermission, transcript, startListening, stopListening, stopListeningAndGetResult, resetTranscript } = useWhisperInput();
-  const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported, unlock: unlockSpeech } = useSpeechSynthesisContext();
+  const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported, unlock: unlockSpeech, pendingSpeak, clearPendingSpeak, retrySpeak } = useSpeechSynthesisContext();
   const haptics = useHaptics();
 
   const talkModeRef = useRef(talkMode);
@@ -529,9 +530,13 @@ function ChatScreenContent() {
     }
     
     if (autoSpeak && fullContent && ttsSupportedRef.current) {
+      lastAssistantMessageRef.current = fullContent;
       setVoiceButtonState('speaking');
       haptics.light();
-      speak(fullContent, activeCounselor?.name);
+      const success = await speak(fullContent, activeCounselor?.name);
+      if (!success) {
+        setVoiceButtonState('idle');
+      }
     } else {
       setVoiceButtonState('idle');
     }
@@ -589,8 +594,14 @@ function ChatScreenContent() {
     }
     
     if (talkModeRef.current && fullContent && ttsSupportedRef.current) {
+      lastAssistantMessageRef.current = fullContent;
       setVoiceButtonState('speaking');
-      setTimeout(() => speak(fullContent, activeCounselor?.name), 50);
+      setTimeout(async () => {
+        const success = await speak(fullContent, activeCounselor?.name);
+        if (!success) {
+          setVoiceButtonState('idle');
+        }
+      }, 50);
     } else {
       setVoiceButtonState('idle');
     }
@@ -741,6 +752,51 @@ function ChatScreenContent() {
         )}
         <HealthStatusIcon onClick={() => setShowHealthModal(true)} />
       </header>
+
+      {/* Talk Mode Playback Button */}
+      {talkMode && (
+        <div className="flex justify-center py-3 px-4 bg-black/20">
+          <button
+            onClick={async () => {
+              if (isSpeaking) {
+                stopSpeaking();
+              } else if (pendingSpeak) {
+                await retrySpeak();
+                setVoiceButtonState('speaking');
+              } else if (lastAssistantMessageRef.current) {
+                setVoiceButtonState('speaking');
+                const success = await speak(lastAssistantMessageRef.current, activeCounselor?.name);
+                if (!success) {
+                  setVoiceButtonState('idle');
+                }
+              }
+            }}
+            disabled={!isSpeaking && !pendingSpeak && !lastAssistantMessageRef.current}
+            className={`
+              flex items-center justify-center gap-2 px-6 py-3 rounded-full font-medium text-white
+              transition-all duration-200 min-h-[52px]
+              ${isSpeaking 
+                ? 'bg-red-500 hover:bg-red-600 shadow-lg shadow-red-500/50' 
+                : 'bg-blue-500 hover:bg-blue-600 shadow-lg shadow-blue-500/50 active:scale-95'
+              }
+              ${!isSpeaking && !pendingSpeak && !lastAssistantMessageRef.current ? 'opacity-50 cursor-not-allowed' : ''}
+            `}
+            aria-label={isSpeaking ? 'Stop speaking' : 'Play last response'}
+          >
+            {isSpeaking ? (
+              <>
+                <Square className="w-5 h-5" />
+                <span>STOP</span>
+              </>
+            ) : (
+              <>
+                <Volume2 className="w-5 h-5" />
+                <span>{pendingSpeak ? 'TAP TO HEAR' : 'PLAY RESPONSE'}</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Conversation Mode Indicator */}
       {conversationMode !== 'advisory' && (

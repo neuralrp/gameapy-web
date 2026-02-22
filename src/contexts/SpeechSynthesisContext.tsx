@@ -1,12 +1,20 @@
 import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
 import { TTS_SERVER_URL } from '../utils/constants';
 
+export interface PendingSpeak {
+  text: string;
+  personality?: string;
+}
+
 export interface SpeechSynthesisContextValue {
-  speak: (text: string, personality?: string) => Promise<void>;
+  speak: (text: string, personality?: string) => Promise<boolean>;
   stop: () => void;
   isSpeaking: boolean;
   isSupported: boolean;
   speakingText: string | null;
+  pendingSpeak: PendingSpeak | null;
+  clearPendingSpeak: () => void;
+  retrySpeak: () => Promise<void>;
   unlock: () => void;
 }
 
@@ -15,14 +23,16 @@ const SpeechSynthesisContext = createContext<SpeechSynthesisContextValue | null>
 export function SpeechSynthesisProvider({ children }: { children: ReactNode }) {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [speakingText, setSpeakingText] = useState<string | null>(null);
+  const [pendingSpeak, setPendingSpeak] = useState<PendingSpeak | null>(null);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const isUnlockedRef = useRef(false);
+  const pendingSpeakRef = useRef<PendingSpeak | null>(null);
 
   const isSupported = typeof window !== 'undefined' && typeof Audio !== 'undefined';
 
-  const speak = useCallback(async (text: string, personality?: string) => {
-    if (!text || !text.trim()) return;
+  const speak = useCallback(async (text: string, personality?: string): Promise<boolean> => {
+    if (!text || !text.trim()) return false;
 
     if (audioRef.current) {
       audioRef.current.pause();
@@ -54,6 +64,8 @@ export function SpeechSynthesisProvider({ children }: { children: ReactNode }) {
       audio.onplay = () => {
         setIsSpeaking(true);
         setSpeakingText(text);
+        setPendingSpeak(null);
+        pendingSpeakRef.current = null;
       };
 
       audio.onended = () => {
@@ -71,11 +83,15 @@ export function SpeechSynthesisProvider({ children }: { children: ReactNode }) {
       };
 
       await audio.play();
+      return true;
       
     } catch (error) {
       console.error('TTS error:', error);
       setIsSpeaking(false);
       setSpeakingText(null);
+      setPendingSpeak({ text, personality });
+      pendingSpeakRef.current = { text, personality };
+      return false;
     }
   }, []);
 
@@ -88,6 +104,18 @@ export function SpeechSynthesisProvider({ children }: { children: ReactNode }) {
     setSpeakingText(null);
   }, []);
 
+  const clearPendingSpeak = useCallback(() => {
+    setPendingSpeak(null);
+    pendingSpeakRef.current = null;
+  }, []);
+
+  const retrySpeak = useCallback(async () => {
+    const pending = pendingSpeakRef.current;
+    if (!pending) return;
+    clearPendingSpeak();
+    await speak(pending.text, pending.personality);
+  }, [speak, clearPendingSpeak]);
+
   const unlock = useCallback(() => {
     if (!isSupported || isUnlockedRef.current) return;
     
@@ -97,7 +125,6 @@ export function SpeechSynthesisProvider({ children }: { children: ReactNode }) {
     audio.play().then(() => {
       isUnlockedRef.current = true;
     }).catch(() => {
-      // Ignore unlock errors
     });
   }, [isSupported]);
   
@@ -108,6 +135,9 @@ export function SpeechSynthesisProvider({ children }: { children: ReactNode }) {
       isSpeaking,
       isSupported,
       speakingText,
+      pendingSpeak,
+      clearPendingSpeak,
+      retrySpeak,
       unlock,
     }}>
       {children}
