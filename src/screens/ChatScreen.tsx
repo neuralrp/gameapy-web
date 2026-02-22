@@ -128,7 +128,7 @@ function ChatScreenContent() {
   });
   
   const { isListening, isTranscribing, hasPermission, requestPermission, transcript, startListening, stopListening, stopListeningAndGetResult, resetTranscript } = useWhisperInput();
-  const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported, unlock: unlockSpeech, pendingSpeak, clearPendingSpeak, retrySpeak } = useSpeechSynthesisContext();
+  const { speak, stop: stopSpeaking, isSpeaking, isSupported: ttsSupported, unlock: unlockSpeech, pendingSpeak, retrySpeak } = useSpeechSynthesisContext();
   const haptics = useHaptics();
 
   const talkModeRef = useRef(talkMode);
