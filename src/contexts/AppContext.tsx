@@ -173,9 +173,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const loadSessions = async () => {
     try {
-      const response = await apiService.getAllSessions(50) as APIResponse<{ sessions: SessionInfo[] }>;
-      if (response.success && response.data?.sessions) {
-        setSessions(response.data.sessions);
+      const response = await apiService.getAllSessions(50);
+      if (response.success && 'sessions' in response) {
+        setSessions(response.sessions);
       }
     } catch (error) {
       console.error('Failed to load sessions:', error);

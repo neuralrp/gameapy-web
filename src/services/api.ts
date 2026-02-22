@@ -228,7 +228,7 @@ export class ApiService {
     });
   }
 
-  async getAllSessions(limit: number = 50): Promise<APIResponse<{ sessions: SessionInfo[] }>> {
+  async getAllSessions(limit: number = 50): Promise<{ success: boolean; sessions: SessionInfo[] }> {
     return this.request(`/api/v1/sessions?limit=${limit}`);
   }
 
