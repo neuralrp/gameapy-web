@@ -11,7 +11,12 @@ interface Notification {
   created_at: string;
 }
 
-export const NotificationBadge: React.FC<{ onClick: () => void }> = ({ onClick }) => {
+interface NotificationBadgeProps {
+  onClick: () => void;
+  onGroupInviteAccepted?: (groupSessionId: number) => void;
+}
+
+export const NotificationBadge: React.FC<NotificationBadgeProps> = ({ onClick, onGroupInviteAccepted }) => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
@@ -43,7 +48,10 @@ export const NotificationBadge: React.FC<{ onClick: () => void }> = ({ onClick }
   );
 };
 
-export const NotificationsModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+export const NotificationsModal: React.FC<{ 
+  onClose: () => void;
+  onGroupInviteAccepted?: (groupSessionId: number) => void;
+}> = ({ onClose, onGroupInviteAccepted }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -114,7 +122,36 @@ export const NotificationsModal: React.FC<{ onClose: () => void }> = ({ onClose 
       case 'trade_accepted': return '✅';
       case 'card_updated': return '🔄';
       case 'friend_request': return '👋';
+      case 'group_invite': return '👥';
+      case 'group_invite_accepted': return '💬';
       default: return '📌';
+    }
+  };
+
+  const handleAcceptGroupInvite = async (inviteId: number, groupSessionId: number) => {
+    try {
+      const res = await apiService.acceptGroupInvite(inviteId);
+      if (res.success) {
+        const notif = notifications.find(n => n.payload?.invite_id === inviteId);
+        if (notif) handleDelete(notif.id);
+        if (onGroupInviteAccepted && groupSessionId) {
+          onGroupInviteAccepted(groupSessionId);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to accept group invite:', err);
+    }
+  };
+
+  const handleDeclineGroupInvite = async (inviteId: number) => {
+    try {
+      const res = await apiService.declineGroupInvite(inviteId);
+      if (res.success) {
+        const notif = notifications.find(n => n.payload?.invite_id === inviteId);
+        if (notif) handleDelete(notif.id);
+      }
+    } catch (err) {
+      console.error('Failed to decline group invite:', err);
     }
   };
 
@@ -167,6 +204,35 @@ export const NotificationsModal: React.FC<{ onClose: () => void }> = ({ onClose 
                       <span className="text-xs text-gray-500 mt-1 block">
                         {formatDate(notif.created_at)}
                       </span>
+                      {notif.type === 'group_invite' && notif.payload?.invite_id && (
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => handleAcceptGroupInvite(notif.payload.invite_id, notif.payload.group_session_id)}
+                            className="px-3 py-1 bg-green-600 hover:bg-green-500 rounded text-xs font-medium transition-colors"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleDeclineGroupInvite(notif.payload.invite_id)}
+                            className="px-3 py-1 bg-red-600 hover:bg-red-500 rounded text-xs font-medium transition-colors"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+                      {notif.type === 'group_invite_accepted' && notif.payload?.group_session_id && (
+                        <button
+                          onClick={() => {
+                            if (onGroupInviteAccepted) {
+                              onGroupInviteAccepted(notif.payload.group_session_id);
+                            }
+                            handleDelete(notif.id);
+                          }}
+                          className="mt-2 px-3 py-1 bg-blue-600 hover:bg-blue-500 rounded text-xs font-medium transition-colors"
+                        >
+                          Join Chat
+                        </button>
+                      )}
                     </div>
                     <div className="flex gap-1">
                       {!notif.is_read && (

@@ -68,6 +68,12 @@ export interface SessionInfo {
   summary: string | null;
   summary_generated_at: string | null;
   counselor_name: string;
+  is_group?: boolean;
+  group_id?: number;
+  friend_id?: number;
+  friend_name?: string;
+  status?: string;
+  is_host?: boolean;
 }
 
 export interface MessageCreate {
@@ -247,6 +253,32 @@ export interface WebSocketMessageOut {
   slot?: string;
   card_type?: string;
   card_id?: number;
+}
+
+export interface GroupInvite {
+  id: number;
+  group_session_id: number;
+  inviter_id: number;
+  inviter_name: string;
+  inviter_username: string;
+  counselor_name: string;
+  created_at: string;
+  expires_at: string;
+}
+
+export interface GroupSessionInfo {
+  id: number;
+  group_id: number;
+  client_id: number;
+  counselor_id: number;
+  is_group: boolean;
+  started_at: string;
+  ended_at: string | null;
+  status: string;
+  counselor_name: string;
+  friend_id: number;
+  friend_name: string;
+  is_host: boolean;
 }
 
 export type WebSocketMessage = WebSocketMessageIn;

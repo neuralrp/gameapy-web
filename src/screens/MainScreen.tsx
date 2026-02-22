@@ -29,7 +29,8 @@ export function MainScreen() {
     setShowInventoryFullScreen,
     logout,
     setCounselor,
-    setSessionId
+    setSessionId,
+    startGroupSession
   } = useApp();
   const navigate = useNavigate();
 
@@ -38,6 +39,7 @@ export function MainScreen() {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isStartingChat, setIsStartingChat] = useState(false);
   const [pendingFriendCount, setPendingFriendCount] = useState(0);
+  const [groupSessions, setGroupSessions] = useState<SessionInfo[]>([]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -56,6 +58,10 @@ export function MainScreen() {
         setIsLoading(true);
         setError(null);
         await loadSessions();
+        const groupRes = await apiService.getGroupHistory();
+        if (groupRes.success && groupRes.data) {
+          setGroupSessions(groupRes.data);
+        }
       } catch (err) {
         console.error('Error loading sessions:', err);
         setError(err instanceof Error ? err.message : 'Failed to load chat history');
@@ -144,6 +150,23 @@ export function MainScreen() {
 
   const handleResumeChat = async (session: SessionInfo) => {
     await resumeSession(session);
+  };
+
+  const handleResumeGroupChat = async (groupSession: SessionInfo) => {
+    try {
+      if (groupSession.status === 'ended') {
+        const res = await apiService.resumeGroupSession(groupSession.group_id!);
+        if (!res.success) {
+          setError('Failed to resume group chat');
+          return;
+        }
+      }
+      startGroupSession(groupSession.group_id!);
+      navigate('/chat');
+    } catch (err) {
+      console.error('Error resuming group chat:', err);
+      setError(err instanceof Error ? err.message : 'Failed to resume group chat');
+    }
   };
 
   const handleLogout = () => {
@@ -253,40 +276,94 @@ export function MainScreen() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-3">
-            {sessions.length === 0 ? (
+            {sessions.length === 0 && groupSessions.length === 0 ? (
               <div className="text-center py-8">
                 <MessageSquare className="w-12 h-12 text-gba-text/40 mx-auto mb-3" />
                 <p className="text-gba-text/60 text-sm">No chats yet</p>
                 <p className="text-gba-text/40 text-xs mt-1">Start a conversation to see it here</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {sessions.map((session) => (
-                  <button
-                    key={session.id}
-                    onClick={() => handleResumeChat(session)}
-                    disabled={isResumingSession}
-                    className="w-full text-left p-3 rounded-lg border-2 border-gba-border bg-gba-ui/50 hover:bg-gba-ui/80 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
-                  >
-                    <div className="flex items-start gap-3">
-                      <MessageSquare className="w-5 h-5 text-gba-text/60 flex-shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-gba-text font-medium text-sm truncate">
-                          {session.summary || 'Chat with ' + session.counselor_name}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-gba-text/60 text-xs">
-                            {formatDate(session.started_at)}
-                          </span>
-                          <span className="text-gba-text/40 text-xs">•</span>
-                          <span className="text-gba-text/60 text-xs truncate">
-                            {session.counselor_name}
-                          </span>
-                        </div>
-                      </div>
+              <div className="space-y-4">
+                {groupSessions.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-gba-text/70 mb-2 flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Group Chats
+                    </h3>
+                    <div className="space-y-2">
+                      {groupSessions.map((session) => (
+                        <button
+                          key={`group-${session.group_id}`}
+                          onClick={() => handleResumeGroupChat(session)}
+                          disabled={isResumingSession}
+                          className="w-full text-left p-3 rounded-lg border-2 border-blue-500/50 bg-blue-500/20 hover:bg-blue-500/30 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                        >
+                          <div className="flex items-start gap-3">
+                            <Users className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="text-gba-text font-medium text-sm truncate">
+                                  with {session.friend_name}
+                                </p>
+                                {session.status === 'active' && (
+                                  <span className="px-1.5 py-0.5 bg-green-500/30 text-green-400 text-xs rounded">
+                                    Active
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-gba-text/60 text-xs">
+                                  {formatDate(session.started_at)}
+                                </span>
+                                <span className="text-gba-text/40 text-xs">•</span>
+                                <span className="text-gba-text/60 text-xs truncate">
+                                  {session.counselor_name}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
                     </div>
-                  </button>
-                ))}
+                  </div>
+                )}
+                {sessions.length > 0 && (
+                  <div>
+                    {groupSessions.length > 0 && (
+                      <h3 className="text-sm font-bold text-gba-text/70 mb-2">
+                        Solo Chats
+                      </h3>
+                    )}
+                    <div className="space-y-2">
+                      {sessions.map((session) => (
+                        <button
+                          key={session.id}
+                          onClick={() => handleResumeChat(session)}
+                          disabled={isResumingSession}
+                          className="w-full text-left p-3 rounded-lg border-2 border-gba-border bg-gba-ui/50 hover:bg-gba-ui/80 transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
+                        >
+                          <div className="flex items-start gap-3">
+                            <MessageSquare className="w-5 h-5 text-gba-text/60 flex-shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-gba-text font-medium text-sm truncate">
+                                {session.summary || 'Chat with ' + session.counselor_name}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-gba-text/60 text-xs">
+                                  {formatDate(session.started_at)}
+                                </span>
+                                <span className="text-gba-text/40 text-xs">•</span>
+                                <span className="text-gba-text/60 text-xs truncate">
+                                  {session.counselor_name}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

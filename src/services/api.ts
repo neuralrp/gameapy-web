@@ -869,6 +869,42 @@ export class ApiService {
   async getGroupMessages(groupId: number, limit: number = 50): Promise<APIResponse<any[]>> {
     return this.request(`/api/v1/groups/${groupId}/messages?limit=${limit}`);
   }
+
+  async sendGroupInvite(friendId: number): Promise<APIResponse<{
+    invite_id: number;
+    group_session_id: number;
+  }>> {
+    return this.request('/api/v1/groups/invite', {
+      method: 'POST',
+      body: JSON.stringify({ friend_id: friendId }),
+    });
+  }
+
+  async acceptGroupInvite(inviteId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/groups/invite/${inviteId}/accept`, {
+      method: 'POST',
+    });
+  }
+
+  async declineGroupInvite(inviteId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/groups/invite/${inviteId}/decline`, {
+      method: 'POST',
+    });
+  }
+
+  async getPendingGroupInvites(): Promise<APIResponse<any[]>> {
+    return this.request('/api/v1/groups/invites/pending');
+  }
+
+  async resumeGroupSession(groupId: number): Promise<APIResponse<any>> {
+    return this.request(`/api/v1/groups/${groupId}/resume`, {
+      method: 'POST',
+    });
+  }
+
+  async getGroupHistory(limit: number = 50): Promise<APIResponse<any[]>> {
+    return this.request(`/api/v1/groups/history?limit=${limit}`);
+  }
 }
 
 export const apiService = new ApiService();

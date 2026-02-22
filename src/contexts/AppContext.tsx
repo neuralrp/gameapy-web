@@ -63,6 +63,7 @@ interface AppContextType {
   leaveGroupSession: () => Promise<void>;
   loadActiveGroupSession: () => Promise<void>;
   clearGroupSession: () => void;
+  startGroupSession: (groupId: number) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -422,6 +423,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const startGroupSession = async (groupId: number) => {
+    try {
+      const response = await apiService.getGroupSession(groupId);
+      if (response.success && response.data) {
+        const { group_session, host, guest, is_host } = response.data as any;
+        if (group_session) {
+          setGroupSessionState({
+            groupSession: group_session,
+            host: host ? { id: host.id, name: host.name, username: host.username, role: 'host' } : null,
+            guest: guest ? { id: guest.id, name: guest.name, username: guest.username, role: 'guest' } : null,
+            isHost: is_host,
+            counselorId: group_session.counselor_id,
+          });
+          setSessionId(group_session.session_id);
+          localStorage.setItem('gameapy_session_id', group_session.session_id.toString());
+        }
+      }
+    } catch (error) {
+      console.error('Failed to start group session:', error);
+      showToast({ message: 'Failed to start group session', type: 'error' });
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -468,6 +492,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         leaveGroupSession,
         loadActiveGroupSession,
         clearGroupSession,
+        startGroupSession,
       }}
     >
       {children}
