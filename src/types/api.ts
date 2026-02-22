@@ -143,6 +143,13 @@ export interface ChatResponse {
 
 export interface SessionAnalyzeResponse {
   cards_updated: number;
+  updates_applied?: Array<{
+    card_id: number;
+    card_type: string;
+    title?: string;
+    category?: string;
+    fields_updated: string[];
+  }>;
 }
 
 export interface CardGenerateRequest {

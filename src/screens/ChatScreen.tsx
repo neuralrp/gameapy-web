@@ -64,6 +64,7 @@ function ChatScreenContent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const lastAssistantMessageRef = useRef<string>('');
+  const lastAnalyzedCountRef = useRef<number>(0);
   
   const isGroupMode = !!groupSessionState.groupSession;
   const groupId = groupSessionState.groupSession?.id ?? null;
@@ -254,13 +255,50 @@ function ChatScreenContent() {
   }, [messages]);
 
   useEffect(() => {
+    const runAnalysis = async () => {
+      if (!sessionId || sessionMessageCount < 5) return;
+      if (sessionMessageCount === lastAnalyzedCountRef.current) return;
+      if (sessionMessageCount % 5 !== 0) return;
+
+      lastAnalyzedCountRef.current = sessionMessageCount;
+      
+      try {
+        const result = await apiService.analyzeSession(sessionId);
+        if (result.success && result.data?.updates_applied) {
+          const createdCards = result.data.updates_applied.filter(
+            u => u.fields_updated.includes('created')
+          );
+          
+          for (const card of createdCards) {
+            if (card.card_type === 'character') {
+              showToast({ message: `🃏 New character card created`, type: 'success' });
+            } else if (card.card_type === 'universal') {
+              showToast({ message: `🃏 New topic card: ${card.title}`, type: 'success' });
+            } else if (card.card_type === 'self') {
+              showToast({ message: `🃏 Your profile card created`, type: 'success' });
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Background session analysis failed:', err);
+      }
+      
+      apiService.analyzeSessionFriendship(sessionId).catch(err => {
+        console.error('Background friendship analysis failed:', err);
+      });
+    };
+    
+    runAnalysis();
+  }, [sessionId, sessionMessageCount, showToast]);
+
+  useEffect(() => {
     return () => {
-      if (sessionId && sessionMessageCount >= 5) {
+      if (sessionId && sessionMessageCount >= 5 && lastAnalyzedCountRef.current !== sessionMessageCount) {
         apiService.analyzeSession(sessionId).catch(err => {
-          console.error('Background session analysis failed:', err);
+          console.error('Final session analysis failed:', err);
         });
         apiService.analyzeSessionFriendship(sessionId).catch(err => {
-          console.error('Background friendship analysis failed:', err);
+          console.error('Final friendship analysis failed:', err);
         });
       }
     };
