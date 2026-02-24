@@ -24,6 +24,7 @@ export function MainScreen() {
   const { 
     sessions, 
     loadSessions, 
+    generateMissingSummaries,
     resumeSession, 
     isResumingSession,
     setShowInventoryFullScreen,
@@ -58,6 +59,7 @@ export function MainScreen() {
         setIsLoading(true);
         setError(null);
         await loadSessions();
+        await generateMissingSummaries();
         const groupRes = await apiService.getGroupHistory();
         if (groupRes.success && groupRes.data) {
           setGroupSessions(groupRes.data);
@@ -71,7 +73,7 @@ export function MainScreen() {
     };
 
     fetchSessions();
-  }, [loadSessions]);
+  }, [loadSessions, generateMissingSummaries]);
 
   useEffect(() => {
     const fetchPendingCount = async () => {
@@ -181,6 +183,17 @@ export function MainScreen() {
     }
   };
 
+  const handleClearAllSessions = async () => {
+    if (!confirm('Delete all chat history? This cannot be undone.')) return;
+    try {
+      await apiService.clearAllSessions();
+      await loadSessions();
+    } catch (err) {
+      console.error('Failed to clear sessions:', err);
+      setError('Failed to clear chat history');
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -275,6 +288,15 @@ export function MainScreen() {
                 aria-label="Logout"
               >
                 <LogOut className="w-5 h-5 text-gba-text" />
+              </button>
+
+              <button
+                onClick={handleClearAllSessions}
+                className="min-h-[36px] min-w-[36px] p-2 bg-red-500/20 border-2 border-red-500/50 rounded-lg hover:bg-red-500/30 transition-colors"
+                aria-label="Clear all chats"
+                title="Clear all chats"
+              >
+                <Trash2 className="w-5 h-5 text-red-400" />
               </button>
 
               <button

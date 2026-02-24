@@ -152,6 +152,37 @@ function ChatScreenContent() {
     }
   }, [sessionId, groupId, loadTableState]);
 
+  const lastSpokenMessageRef = useRef<string>('');
+  
+  useEffect(() => {
+    if (!talkMode || !ttsSupportedRef.current) return;
+
+    const pollInterval = setInterval(() => {
+      if (isLoading) return;
+      
+      const messagesnapshot = messages;
+      const lastMessage = messagesnapshot[messagesnapshot.length - 1];
+      
+      if (
+        lastMessage && 
+        lastMessage.role === 'assistant' && 
+        lastMessage.content && 
+        lastMessage.content.trim() &&
+        lastMessage.id !== lastSpokenMessageRef.current
+      ) {
+        lastSpokenMessageRef.current = lastMessage.id;
+        setVoiceButtonState('speaking');
+        speak(lastMessage.content, activeCounselor?.name).then(success => {
+          if (!success) {
+            setVoiceButtonState('idle');
+          }
+        });
+      }
+    }, 5000);
+
+    return () => clearInterval(pollInterval);
+  }, [talkMode, messages, isLoading, activeCounselor?.name, speak]);
+
   const loadSessionHistory = async (sid: number) => {
     setIsLoadingHistory(true);
     try {
@@ -283,6 +314,10 @@ function ChatScreenContent() {
         console.error('Background session analysis failed:', err);
       }
       
+      apiService.analyzeSessionTargeted(sessionId).catch(err => {
+        console.error('Background targeted card updates failed:', err);
+      });
+      
       apiService.analyzeSessionFriendship(sessionId).catch(err => {
         console.error('Background friendship analysis failed:', err);
       });
@@ -296,6 +331,9 @@ function ChatScreenContent() {
       if (sessionId && sessionMessageCount >= 5 && lastAnalyzedCountRef.current !== sessionMessageCount) {
         apiService.analyzeSession(sessionId).catch(err => {
           console.error('Final session analysis failed:', err);
+        });
+        apiService.analyzeSessionTargeted(sessionId).catch(err => {
+          console.error('Final targeted card updates failed:', err);
         });
         apiService.analyzeSessionFriendship(sessionId).catch(err => {
           console.error('Final friendship analysis failed:', err);

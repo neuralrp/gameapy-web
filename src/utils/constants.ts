@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
   unpinCard: (type: string, id: number) => `/api/v1/cards/${type}/${id}/unpin`,
   clientCards: '/api/v1/cards',
   analyzeSession: (sessionId: number) => `/api/v1/sessions/${sessionId}/analyze`,
+  analyzeSessionTargeted: (sessionId: number) => `/api/v1/sessions/${sessionId}/targeted-updates`,
   health: '/health',
   groups: {
     create: '/api/v1/groups/create',

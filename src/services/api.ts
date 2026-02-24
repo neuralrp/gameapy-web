@@ -252,6 +252,10 @@ export class ApiService {
     return this.request(`/api/v1/sessions/${sessionId}`, { method: 'DELETE' });
   }
 
+  async clearAllSessions(): Promise<APIResponse> {
+    return this.request('/api/v1/sessions', { method: 'DELETE' });
+  }
+
   async sendMessage(data: ChatRequest): Promise<Response> {
     const url = `${this.baseUrl}${API_ENDPOINTS.chat}`;
     
@@ -396,6 +400,19 @@ export class ApiService {
 
   async analyzeSession(sessionId: number): Promise<APIResponse<SessionAnalyzeResponse>> {
     return this.request(API_ENDPOINTS.analyzeSession(sessionId), {
+      method: 'POST',
+    });
+  }
+
+  async analyzeSessionTargeted(sessionId: number): Promise<APIResponse<{
+    cards_updated: number;
+    updates: Array<{
+      card_id: number;
+      card_type: string;
+      updates_count: number;
+    }>;
+  }>> {
+    return this.request(API_ENDPOINTS.analyzeSessionTargeted(sessionId), {
       method: 'POST',
     });
   }

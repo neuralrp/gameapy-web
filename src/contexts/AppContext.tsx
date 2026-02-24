@@ -54,6 +54,7 @@ interface AppContextType {
   logout: () => void;
   sessions: SessionInfo[];
   loadSessions: () => Promise<void>;
+  generateMissingSummaries: () => Promise<void>;
   resumeSession: (session: SessionInfo) => Promise<void>;
   endCurrentSession: () => Promise<void>;
   isResumingSession: boolean;
@@ -181,6 +182,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('Failed to load sessions:', error);
     }
   }, []);
+
+  const generateMissingSummaries = useCallback(async () => {
+    const sessionsNeedingSummary = sessions.filter(s => !s.summary);
+    if (sessionsNeedingSummary.length === 0) return;
+
+    const updatedSessions = [...sessions];
+    for (const session of sessionsNeedingSummary) {
+      try {
+        const result = await apiService.summarizeSession(session.id);
+        if (result.success && result.data) {
+          const index = updatedSessions.findIndex(s => s.id === session.id);
+          if (index !== -1) {
+            updatedSessions[index] = {
+              ...updatedSessions[index],
+              summary: result.data.summary
+            };
+          }
+        }
+      } catch (err) {
+        console.error(`Failed to generate summary for session ${session.id}:`, err);
+      }
+    }
+    setSessions(updatedSessions);
+  }, [sessions]);
 
   const resumeSession = async (session: SessionInfo) => {
     setIsResumingSession(true);
@@ -483,6 +508,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logout,
         sessions,
         loadSessions,
+        generateMissingSummaries,
         resumeSession,
         endCurrentSession,
         isResumingSession,
