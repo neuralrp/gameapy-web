@@ -187,24 +187,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const sessionsNeedingSummary = sessions.filter(s => !s.summary).slice(0, 5);
     if (sessionsNeedingSummary.length === 0) return;
 
-    const updatedSessions = [...sessions];
-    for (const session of sessionsNeedingSummary) {
+    for (let i = 0; i < sessionsNeedingSummary.length; i++) {
+      const session = sessionsNeedingSummary[i];
       try {
         const result = await apiService.summarizeSession(session.id);
         if (result.success && result.data) {
-          const index = updatedSessions.findIndex(s => s.id === session.id);
-          if (index !== -1) {
-            updatedSessions[index] = {
-              ...updatedSessions[index],
-              summary: result.data.summary
-            };
-          }
+          setSessions(prev => prev.map(s => 
+            s.id === session.id ? { ...s, summary: result.data.summary } : s
+          ));
         }
       } catch (err) {
         console.error(`Failed to generate summary for session ${session.id}:`, err);
       }
+      if (i < sessionsNeedingSummary.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 15000));
+      }
     }
-    setSessions(updatedSessions);
   }, [sessions]);
 
   const resumeSession = async (session: SessionInfo) => {

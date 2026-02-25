@@ -59,7 +59,7 @@ export function MainScreen() {
         setIsLoading(true);
         setError(null);
         await loadSessions();
-        await generateMissingSummaries();
+        generateMissingSummaries();
         const groupRes = await apiService.getGroupHistory();
         if (groupRes.success && groupRes.data) {
           setGroupSessions(groupRes.data);

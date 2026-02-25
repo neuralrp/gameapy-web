@@ -1,6 +1,6 @@
 # Gameapy - Agent Quick Reference
 
-**Version**: 6.0.0 | **Last Updated**: 2026-02-21 (Group Sessions + Auth)
+**Version**: 6.1.0 | **Last Updated**: 2026-02-24 (Targeted Card Updates)
 
 ---
 
@@ -52,7 +52,7 @@ gameapy-web/              # Web frontend repo
 
 **Completed Backend**: Phases 1-6 (Personalities, Table, Cards, Wildcards, Trading, Images)
 **Completed Frontend**: Phases 0-6 (Web MVP complete + deployed to Vercel)
-**Latest Update**: Group Sessions + Auth (2026-02-21) - Multi-user chat with friends, invite codes, WebSocket support, and JWT authentication
+**Latest Update**: Targeted Card Updates (2026-02-24) - Per-card LLM updates with focused questions per entity
 **Production Deploy**: Backend on Railway, Frontend on Vercel
 **Status**: Live at https://gameapy-web.vercel.app
 
@@ -60,7 +60,7 @@ gameapy-web/              # Web frontend repo
 - **Card System**: self_cards, character_cards, world_events with pin/auto-update toggles
 - **Card Generator**: Plain text → structured JSON (with fallback)
 - **Pin System**: "Keep this in mind" cards always load in context
-- **Auto-Update System**: Invisible updates with per-card toggles
+- **Auto-Update System**: Targeted per-card updates with separate LLM call per entity (self, character, world events)
 - **Context Assembly**: Self + pinned + current + recent cards → prose for LLM
 - **Streaming Chat**: SSE real-time responses with metadata
 - **Evolution Features**: Personalities, Table, Universal Cards, Wildcards, Friends, Trading, Notifications, Images
@@ -190,7 +190,7 @@ FastAPI Backend
     ├─ Images API (/api/v1/images/*)
     ├─ Groups API (/api/v1/groups/*)
     ├─ Auth API (/auth/*)
-    └─ Session Analyzer (/api/v1/sessions/{id}/analyze)
+    └─ Session Analyzer (/api/v1/sessions/{id}/analyze, /api/v1/sessions/{id}/targeted-updates)
     ↓
 PostgreSQL Database
     ├─ self_cards, character_cards, world_events
