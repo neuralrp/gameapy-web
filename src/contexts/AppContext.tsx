@@ -184,7 +184,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const generateMissingSummaries = useCallback(async () => {
-    const sessionsNeedingSummary = sessions.filter(s => !s.summary);
+    const sessionsNeedingSummary = sessions.filter(s => !s.summary).slice(0, 5);
     if (sessionsNeedingSummary.length === 0) return;
 
     const updatedSessions = [...sessions];
