@@ -54,7 +54,6 @@ interface AppContextType {
   logout: () => void;
   sessions: SessionInfo[];
   loadSessions: () => Promise<void>;
-  generateMissingSummaries: () => Promise<void>;
   resumeSession: (session: SessionInfo) => Promise<void>;
   endCurrentSession: () => Promise<void>;
   isResumingSession: boolean;
@@ -507,7 +506,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         logout,
         sessions,
         loadSessions,
-        generateMissingSummaries,
         resumeSession,
         endCurrentSession,
         isResumingSession,

@@ -24,7 +24,6 @@ export function MainScreen() {
   const { 
     sessions, 
     loadSessions, 
-    generateMissingSummaries,
     resumeSession, 
     isResumingSession,
     setShowInventoryFullScreen,
