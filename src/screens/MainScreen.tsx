@@ -59,7 +59,6 @@ export function MainScreen() {
         setIsLoading(true);
         setError(null);
         await loadSessions();
-        generateMissingSummaries();
         const groupRes = await apiService.getGroupHistory();
         if (groupRes.success && groupRes.data) {
           setGroupSessions(groupRes.data);
@@ -73,7 +72,7 @@ export function MainScreen() {
     };
 
     fetchSessions();
-  }, [loadSessions, generateMissingSummaries]);
+  }, [loadSessions]);
 
   useEffect(() => {
     const fetchPendingCount = async () => {

@@ -172,19 +172,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('gameapy_session_id');
   };
 
-  const loadSessions = useCallback(async () => {
-    try {
-      const response = await apiService.getAllSessions(50);
-      if (response.success && 'sessions' in response) {
-        setSessions(response.sessions);
-      }
-    } catch (error) {
-      console.error('Failed to load sessions:', error);
-    }
-  }, []);
-
-  const generateMissingSummaries = useCallback(async () => {
-    const sessionsNeedingSummary = sessions.filter(s => !s.summary).slice(0, 5);
+  const generateMissingSummaries = useCallback(async (loadedSessions: SessionInfo[]) => {
+    const sessionsNeedingSummary = loadedSessions.filter(s => !s.summary).slice(0, 5);
     if (sessionsNeedingSummary.length === 0) return;
 
     for (let i = 0; i < sessionsNeedingSummary.length; i++) {
@@ -203,7 +192,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await new Promise(resolve => setTimeout(resolve, 15000));
       }
     }
-  }, [sessions]);
+  }, []);
+
+  const loadSessions = useCallback(async () => {
+    try {
+      const response = await apiService.getAllSessions(50);
+      if (response.success && 'sessions' in response) {
+        setSessions(response.sessions);
+        generateMissingSummaries(response.sessions);
+      }
+    } catch (error) {
+      console.error('Failed to load sessions:', error);
+    }
+  }, [generateMissingSummaries]);
 
   const resumeSession = async (session: SessionInfo) => {
     setIsResumingSession(true);
