@@ -191,9 +191,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const session = sessionsNeedingSummary[i];
       try {
         const result = await apiService.summarizeSession(session.id);
-        if (result.success && result.data) {
+        if (result.success && result.data?.summary) {
           setSessions(prev => prev.map(s => 
-            s.id === session.id ? { ...s, summary: result.data.summary } : s
+            s.id === session.id ? { ...s, summary: result.data!.summary } : s
           ));
         }
       } catch (err) {
